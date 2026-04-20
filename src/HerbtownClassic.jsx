@@ -725,12 +725,19 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
     addStrokeDebts(debts, r.strokePayouts);
     // Match play: per-hole we know winners. Aggregated at trip level as net totals per player.
     addMatchDebts(debts, r.matchDetails);
-    // Snakes: loser pays each non-loser equally
-    if (r.snakePayment.loser && r.snakePayment.amount > 0) {
-      const perRecipient = r.snakePayment.amount / 2;
-      PLAYERS.filter((p) => p !== r.snakePayment.loser).forEach((p) => {
-        debts[r.snakePayment.loser][p] += perRecipient;
-      });
+    // Snakes: last holders split the pot owed to non-holders
+    if (r.snakePayment.losers && r.snakePayment.losers.length > 0 && r.snakePayment.amount > 0 && !r.snakePayment.wash) {
+      const losers = r.snakePayment.losers;
+      const nonLosers = PLAYERS.filter((p) => !losers.includes(p));
+      if (nonLosers.length > 0) {
+        const perLoser = r.snakePayment.amount / losers.length;
+        const perRecipient = perLoser / nonLosers.length;
+        losers.forEach((loser) => {
+          nonLosers.forEach((winner) => {
+            debts[loser][winner] += perRecipient;
+          });
+        });
+      }
     }
   });
 
@@ -855,10 +862,18 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   const toggleSnake = (holeIdx, player) => {
     const newSnakes = { ...snakes };
     if (!newSnakes[round.id]) newSnakes[round.id] = {};
-    if (newSnakes[round.id][holeIdx] === player) {
+    // Normalize current value to array (handles legacy string entries)
+    const current = newSnakes[round.id][holeIdx];
+    let arr = Array.isArray(current) ? [...current] : (current ? [current] : []);
+    if (arr.includes(player)) {
+      arr = arr.filter((p) => p !== player);
+    } else {
+      arr.push(player);
+    }
+    if (arr.length === 0) {
       delete newSnakes[round.id][holeIdx];
     } else {
-      newSnakes[round.id][holeIdx] = player;
+      newSnakes[round.id][holeIdx] = arr;
     }
     saveSnakes(newSnakes);
   };
@@ -1131,7 +1146,8 @@ function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, roundSid
   const holeScores = roundScores[holeIdx] || {};
   const par = round.pars[holeIdx] || 4;
   const hcpIdx = round.handicapIndex[holeIdx] || holeIdx + 1;
-  const snakeHolder = roundSnakes[holeIdx];
+  const rawSnakes = roundSnakes[holeIdx];
+  const snakeHolders = Array.isArray(rawSnakes) ? rawSnakes : (rawSnakes ? [rawSnakes] : []);
   const ctpWinner = roundCtp[holeIdx];
   const holeSideBets = roundSideBets[holeIdx] || [];
 
@@ -1210,7 +1226,7 @@ function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, roundSid
         {PLAYERS.map((p) => {
           const gross = holeScores[p] || '';
           const strokesThisHole = round.type === 'standard' ? getHandicapStrokesPerHole(round.strokes[p], round.handicapIndex)[holeIdx] || 0 : 0;
-          const isSnake = snakeHolder === p;
+          const isSnake = snakeHolders.includes(p);
           const isCtp = ctpWinner === p;
           const hasStroke = strokesThisHole > 0;
 
@@ -1652,7 +1668,24 @@ function RoundSummary({ round, results }) {
             </span>
           </div>
         ))}
-        {results.snakePayment.loser && (
+        {results.snakePayment.wash && (
+          <div style={{
+            marginTop: '8px',
+            padding: '8px',
+            background: 'rgba(244, 234, 213, 0.05)',
+            border: '1px solid rgba(212, 165, 116, 0.3)',
+            borderRadius: '2px',
+            fontSize: '11px',
+            textAlign: 'center',
+            letterSpacing: '1px',
+          }}>
+            🐍 <span style={{ color: '#d4a574', fontWeight: 700 }}>WASH</span> — all 3 snaked on the last hole
+            <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px' }}>
+              ({results.snakePayment.totalSnakes} snakes total · no money changes hands)
+            </div>
+          </div>
+        )}
+        {results.snakePayment.losers && results.snakePayment.losers.length > 0 && !results.snakePayment.wash && (
           <div style={{
             marginTop: '8px',
             padding: '8px',
@@ -1663,9 +1696,9 @@ function RoundSummary({ round, results }) {
             textAlign: 'center',
             letterSpacing: '1px',
           }}>
-            <span style={{ color: '#c44b4b', fontWeight: 700 }}>{results.snakePayment.loser}</span> pays <span style={{ color: '#c44b4b', fontWeight: 700 }}>${results.snakePayment.amount}</span>
+            <span style={{ color: '#c44b4b', fontWeight: 700 }}>{results.snakePayment.losers.join(' & ')}</span> {results.snakePayment.losers.length > 1 ? 'split' : 'pays'} <span style={{ color: '#c44b4b', fontWeight: 700 }}>${results.snakePayment.amount}</span>
             <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px' }}>
-              ({results.snakePayment.totalSnakes} snake{results.snakePayment.totalSnakes !== 1 ? 's' : ''} · last holder pays · split ${results.snakePayment.amount / 2} to each)
+              ({results.snakePayment.totalSnakes} snake{results.snakePayment.totalSnakes !== 1 ? 's' : ''} · {results.snakePayment.losers.length > 1 ? `last ${results.snakePayment.losers.length} snakers split the pot` : 'last snaker pays'})
             </div>
           </div>
         )}
@@ -1817,34 +1850,49 @@ function computeRoundResults(round, scores, snakes, ctp) {
     }
   }
 
-  // Snakes: last holder pays total × SNAKE_VALUE, split evenly to other two
+  // Snakes: last holder(s) pay total × SNAKE_VALUE
+  // If multiple players snake on the final-snake hole, they split the payout owed to non-snakers
+  // If all 3 snake on the last hole → wash (no money changes)
   const snakesByPlayer = {};
   PLAYERS.forEach((p) => { snakesByPlayer[p] = { count: 0 }; });
-  let lastHolder = null;
   let totalSnakes = 0;
+  let lastHolders = []; // array of players who snaked on the most recent snake hole
+  let lastHoleIdx = -1;
   const holeKeys = Object.keys(roundSnakes).map(Number).sort((a, b) => a - b);
   holeKeys.forEach((h) => {
-    const p = roundSnakes[h];
-    if (PLAYERS.includes(p)) {
-      snakesByPlayer[p].count += 1;
-      lastHolder = p;
-      totalSnakes += 1;
+    const raw = roundSnakes[h];
+    const playersOnHole = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+    const validPlayers = playersOnHole.filter((p) => PLAYERS.includes(p));
+    if (validPlayers.length === 0) return;
+    validPlayers.forEach((p) => { snakesByPlayer[p].count += 1; totalSnakes += 1; });
+    if (h > lastHoleIdx) {
+      lastHoleIdx = h;
+      lastHolders = validPlayers;
     }
   });
 
   const snakeAmount = totalSnakes * SNAKE_VALUE;
   const snakePayouts = { Frosty: 0, Herby: 0, Carlos: 0 };
-  if (lastHolder && totalSnakes > 0) {
-    snakePayouts[lastHolder] = -snakeAmount;
-    PLAYERS.filter((p) => p !== lastHolder).forEach((p) => {
-      snakePayouts[p] = snakeAmount / 2;
-    });
+  if (lastHolders.length > 0 && totalSnakes > 0) {
+    const nonHolders = PLAYERS.filter((p) => !lastHolders.includes(p));
+    if (nonHolders.length === 0) {
+      // All 3 snaked on the last hole — wash, no payout
+    } else {
+      // Each last holder pays (snakeAmount / lastHolders.length) total
+      // That amount is split equally among the non-holders
+      const perLoser = snakeAmount / lastHolders.length;
+      const perWinner = snakeAmount / lastHolders.length / nonHolders.length;
+      lastHolders.forEach((p) => { snakePayouts[p] = -perLoser; });
+      nonHolders.forEach((p) => { snakePayouts[p] = perWinner * lastHolders.length; });
+    }
   }
 
   const snakePayment = {
-    loser: lastHolder,
+    losers: lastHolders,
+    loser: lastHolders.length === 1 ? lastHolders[0] : null, // kept for backward compat
     totalSnakes,
     amount: snakeAmount,
+    wash: lastHolders.length === PLAYERS.length && totalSnakes > 0,
   };
 
   // CTP
