@@ -31,15 +31,12 @@ const ROUNDS = [
     id: 'cliffhangers',
     name: 'Cliffhangers',
     day: 'Thursday 2PM',
-    holes: 9,
+    holes: 18,
     type: 'cliffhangers',
-    // Everyone plays same tees at Cliffhangers
     tees: { Frosty: 'Back', Herby: 'Back', Carlos: 'Back' },
     strokes: { Frosty: 0, Herby: 0, Carlos: 0 },
-    // All par 3s (9 holes)
-    pars: [3, 3, 3, 3, 3, 3, 3, 3, 3],
-    // No hcp index on card → use hole order
-    handicapIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    pars: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+    handicapIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
   },
   {
     id: 'buffalo_fri',
@@ -49,10 +46,9 @@ const ROUNDS = [
     type: 'standard',
     tees: { Frosty: 'Black/Blue', Herby: 'Black/Blue', Carlos: 'Blue/White' },
     strokes: { Frosty: 0, Herby: 7.5, Carlos: 4 },
-    // Buffalo Ridge: 5,4,4,3,4,4,3,5,3 | 4,3,4,4,5,4,4,3,5 = Par 71
     pars: [5, 4, 4, 3, 4, 4, 3, 5, 3, 4, 3, 4, 4, 5, 4, 4, 3, 5],
-    // HCP: 5,1,9,17,7,13,11,3,15 | 12,18,4,8,2,14,10,16,6
     handicapIndex: [5, 1, 9, 17, 7, 13, 11, 3, 15, 12, 18, 4, 8, 2, 14, 10, 16, 6],
+    forwardTeeHoles: [2, 4, 5, 7, 8, 12, 13, 14, 16, 18],
   },
   {
     id: 'ozarks_fri',
@@ -62,10 +58,9 @@ const ROUNDS = [
     type: 'standard',
     tees: { Frosty: 'Black/Blue', Herby: 'Black/Blue', Carlos: 'Blue/White' },
     strokes: { Frosty: 0, Herby: 7, Carlos: 3.5 },
-    // Ozarks: 5,3,4,4,4,3,5,3,5 | 4,5,3,4,4,4,4,3,4 = Par 71
     pars: [5, 3, 4, 4, 4, 3, 5, 3, 5, 4, 5, 3, 4, 4, 4, 4, 3, 4],
-    // HCP: 8,18,14,2,10,12,6,16,4 | 13,9,11,3,5,15,1,17,7
     handicapIndex: [8, 18, 14, 2, 10, 12, 6, 16, 4, 13, 9, 11, 3, 5, 15, 1, 17, 7],
+    forwardTeeHoles: [2, 4, 6, 9, 10, 12, 13, 14, 18],
   },
   {
     id: 'ozarks_sat',
@@ -77,6 +72,7 @@ const ROUNDS = [
     strokes: { Frosty: 0, Herby: 7, Carlos: 3.5 },
     pars: [5, 3, 4, 4, 4, 3, 5, 3, 5, 4, 5, 3, 4, 4, 4, 4, 3, 4],
     handicapIndex: [8, 18, 14, 2, 10, 12, 6, 16, 4, 13, 9, 11, 3, 5, 15, 1, 17, 7],
+    forwardTeeHoles: [2, 4, 6, 9, 10, 12, 13, 14, 18],
   },
   {
     id: 'buffalo_sat',
@@ -88,6 +84,7 @@ const ROUNDS = [
     strokes: { Frosty: 0, Herby: 7.5, Carlos: 4 },
     pars: [5, 4, 4, 3, 4, 4, 3, 5, 3, 4, 3, 4, 4, 5, 4, 4, 3, 5],
     handicapIndex: [5, 1, 9, 17, 7, 13, 11, 3, 15, 12, 18, 4, 8, 2, 14, 10, 16, 6],
+    forwardTeeHoles: [2, 4, 5, 7, 8, 12, 13, 14, 16, 18],
   },
   {
     id: 'paynes',
@@ -95,12 +92,11 @@ const ROUNDS = [
     day: 'Sunday 8AM',
     holes: 18,
     type: 'standard',
-    tees: { Frosty: 'Blue', Herby: 'Blue', Carlos: 'White' },
+    tees: { Frosty: 'Blue', Herby: 'Blue', Carlos: 'Blue/White' },
     strokes: { Frosty: 0, Herby: 7, Carlos: 2 },
-    // Paynes: 4,3,4,5,3,4,4,5,4 | 3,4,4,5,4,4,3,4,5 = Par 72
     pars: [4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 4, 5, 4, 4, 3, 4, 5],
-    // HCP: 3,7,17,11,9,13,15,5,1 | 16,12,18,2,10,4,14,8,6
     handicapIndex: [3, 7, 17, 11, 9, 13, 15, 5, 1, 16, 12, 18, 2, 10, 4, 14, 8, 6],
+    forwardTeeHoles: [1, 2, 4, 5, 6, 11, 13, 14, 16],
   },
 ];
 
@@ -116,13 +112,15 @@ const TEE_COLORS = {
   'N/A': { bg: 'transparent', border: 'rgba(212, 165, 116, 0.3)', text: '#d4a574' },
 };
 
-// Resolve combo tees to actual tee used on a specific hole (based on handicap index)
-// For 18-hole courses: handicap index 1-9 (harder) → first color, 10-18 (easier) → second color
-const resolveTeeForHole = (teeString, handicapIdx) => {
+// Resolve combo tees to actual tee used on a specific hole based on forwardTeeHoles list
+// holeIdx is 0-based, forwardTeeHoles uses 1-based hole numbers
+const resolveTeeForHole = (teeString, holeIdx, round) => {
   if (!teeString) return null;
   if (!teeString.includes('/')) return teeString; // not a combo
-  const [harder, easier] = teeString.split('/');
-  return handicapIdx <= 9 ? harder : easier;
+  const [back, forward] = teeString.split('/');
+  const holeNumber = holeIdx + 1;
+  const isForward = round?.forwardTeeHoles?.includes(holeNumber);
+  return isForward ? forward : back;
 };
 
 // ============= HELPERS =============
@@ -224,6 +222,7 @@ export default function HerbtownClassic() {
   const [scores, setScores] = useState({});
   const [snakes, setSnakes] = useState({});
   const [ctp, setCtp] = useState({});
+  const [sideBets, setSideBets] = useState({});
   const [view, setView] = useState('home');
 
   const loadData = useCallback(() => {
@@ -231,6 +230,7 @@ export default function HerbtownClassic() {
     const scoresRef = ref(db, 'scores');
     const snakesRef = ref(db, 'snakes');
     const ctpRef = ref(db, 'ctp');
+    const sideBetsRef = ref(db, 'sideBets');
 
     const unsubScores = onValue(scoresRef, (snap) => {
       setScores(snap.val() || {});
@@ -241,8 +241,9 @@ export default function HerbtownClassic() {
     });
     const unsubSnakes = onValue(snakesRef, (snap) => setSnakes(snap.val() || {}));
     const unsubCtp = onValue(ctpRef, (snap) => setCtp(snap.val() || {}));
+    const unsubSideBets = onValue(sideBetsRef, (snap) => setSideBets(snap.val() || {}));
 
-    return () => { unsubScores(); unsubSnakes(); unsubCtp(); };
+    return () => { unsubScores(); unsubSnakes(); unsubCtp(); unsubSideBets(); };
   }, []);
 
   useEffect(() => {
@@ -271,12 +272,20 @@ export default function HerbtownClassic() {
       else await fbSet(ref(db, 'ctp'), newCtp);
     } catch (e) { console.error('save ctp:', e); }
   };
+  const saveSideBets = async (newSideBets) => {
+    setSideBets(newSideBets);
+    try {
+      if (Object.keys(newSideBets).length === 0) await fbRemove(ref(db, 'sideBets'));
+      else await fbSet(ref(db, 'sideBets'), newSideBets);
+    } catch (e) { console.error('save sideBets:', e); }
+  };
 
   const resetAll = async () => {
     if (!confirm('Reset ALL scores for ALL rounds? This cannot be undone.')) return;
     await saveScores({});
     await saveSnakes({});
     await saveCtp({});
+    await saveSideBets({});
   };
 
   if (loading) {
@@ -314,6 +323,7 @@ export default function HerbtownClassic() {
           scores={scores}
           snakes={snakes}
           ctp={ctp}
+          sideBets={sideBets}
           resetAll={resetAll}
         />
       )}
@@ -324,9 +334,11 @@ export default function HerbtownClassic() {
           scores={scores}
           snakes={snakes}
           ctp={ctp}
+          sideBets={sideBets}
           saveScores={saveScores}
           saveSnakes={saveSnakes}
           saveCtp={saveCtp}
+          saveSideBets={saveSideBets}
           setView={setView}
           setRoundIdx={setRoundIdx}
         />
@@ -336,6 +348,7 @@ export default function HerbtownClassic() {
           scores={scores}
           snakes={snakes}
           ctp={ctp}
+          sideBets={sideBets}
           setView={setView}
         />
       )}
@@ -502,7 +515,7 @@ function HerbtownLogo() {
 }
 
 // ============= HOME VIEW =============
-function HomeView({ setRoundIdx, setView, scores, snakes, ctp, resetAll }) {
+function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, resetAll }) {
   return (
     <div className="fade-in" style={{ padding: '20px 18px 100px', maxWidth: '500px', margin: '0 auto' }}>
       {/* Header - Logo */}
@@ -515,7 +528,7 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, resetAll }) {
       </div>
 
       {/* Trip Standings */}
-      <TripStandings scores={scores} snakes={snakes} ctp={ctp} />
+      <TripStandings scores={scores} snakes={snakes} ctp={ctp} sideBets={sideBets} />
 
       {/* Rounds */}
       <div style={{ marginBottom: '20px' }}>
@@ -624,8 +637,8 @@ function getRoundProgress(round, scores) {
 }
 
 // ============= TRIP STANDINGS =============
-function TripStandings({ scores, snakes, ctp }) {
-  const totals = computeTripTotals(scores, snakes, ctp);
+function TripStandings({ scores, snakes, ctp, sideBets }) {
+  const { totals } = computeTripTotals(scores, snakes, ctp, sideBets);
   const maxTotal = Math.max(...PLAYERS.map((p) => totals[p].total));
 
   return (
@@ -640,11 +653,12 @@ function TripStandings({ scores, snakes, ctp }) {
         ⟢ THE STANDINGS ⟢
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.6fr 0.6fr 0.55fr 0.8fr', gap: '6px', fontSize: '9px', opacity: 0.55, letterSpacing: '1px', marginBottom: '6px', padding: '0 2px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 0.55fr 0.55fr 0.45fr 0.5fr 0.75fr', gap: '5px', fontSize: '9px', opacity: 0.55, letterSpacing: '1px', marginBottom: '6px', padding: '0 2px' }}>
         <div>PLAYER</div>
         <div style={{ textAlign: 'center' }}>STROKE</div>
         <div style={{ textAlign: 'center' }}>MATCH</div>
         <div style={{ textAlign: 'center' }}>🐍</div>
+        <div style={{ textAlign: 'center' }}>⚡</div>
         <div style={{ textAlign: 'right' }}>TOTAL</div>
       </div>
       {PLAYERS.map((p, idx) => {
@@ -653,8 +667,8 @@ function TripStandings({ scores, snakes, ctp }) {
         return (
           <div key={p} style={{
             display: 'grid',
-            gridTemplateColumns: '1.1fr 0.6fr 0.6fr 0.55fr 0.8fr',
-            gap: '6px',
+            gridTemplateColumns: '1fr 0.55fr 0.55fr 0.45fr 0.5fr 0.75fr',
+            gap: '5px',
             padding: '9px 2px',
             borderBottom: idx < 2 ? '1px dashed rgba(212, 165, 116, 0.15)' : 'none',
             alignItems: 'center',
@@ -672,6 +686,9 @@ function TripStandings({ scores, snakes, ctp }) {
             <div style={{ textAlign: 'center', fontSize: '12px', color: t.snake >= 0 ? '#6b9e4e' : '#c44b4b' }}>
               {t.snake >= 0 ? '+' : ''}{t.snake}
             </div>
+            <div style={{ textAlign: 'center', fontSize: '12px', color: t.side >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+              {t.side >= 0 ? '+' : ''}{t.side}
+            </div>
             <div style={{ textAlign: 'right', fontSize: '15px', fontWeight: 700, color: t.total >= 0 ? '#6b9e4e' : '#c44b4b' }}>
               {t.total >= 0 ? '+' : ''}${t.total}
             </div>
@@ -682,9 +699,16 @@ function TripStandings({ scores, snakes, ctp }) {
   );
 }
 
-function computeTripTotals(scores, snakes, ctp) {
+function computeTripTotals(scores, snakes, ctp, sideBets) {
   const totals = {};
-  PLAYERS.forEach((p) => { totals[p] = { stroke: 0, match: 0, snake: 0, total: 0, matchPoints: 0 }; });
+  PLAYERS.forEach((p) => { totals[p] = { stroke: 0, match: 0, snake: 0, side: 0, total: 0, matchPoints: 0 }; });
+
+  // Pairwise debts: debts[from][to] = amount from owes to (positive)
+  const debts = {};
+  PLAYERS.forEach((p) => {
+    debts[p] = {};
+    PLAYERS.forEach((q) => { if (p !== q) debts[p][q] = 0; });
+  });
 
   ROUNDS.forEach((round) => {
     const r = computeRoundResults(round, scores, snakes, ctp);
@@ -694,24 +718,120 @@ function computeTripTotals(scores, snakes, ctp) {
       totals[p].snake += r.snakePayouts[p] || 0;
       totals[p].matchPoints += r.matchPoints[p] || 0;
     });
+
+    // Pairwise from stroke play (treat 1st->3rd pays $40, 2nd->3rd swaps $30)
+    // Simpler: for each pair, subtract the difference between their stroke payouts divided proportionally
+    // Actually easier — use the computed payouts to derive who pays whom pairwise:
+    addStrokeDebts(debts, r.strokePayouts);
+    // Match play: per-hole we know winners. Aggregated at trip level as net totals per player.
+    addMatchDebts(debts, r.matchDetails);
+    // Snakes: loser pays each non-loser equally
+    if (r.snakePayment.loser && r.snakePayment.amount > 0) {
+      const perRecipient = r.snakePayment.amount / 2;
+      PLAYERS.filter((p) => p !== r.snakePayment.loser).forEach((p) => {
+        debts[r.snakePayment.loser][p] += perRecipient;
+      });
+    }
+  });
+
+  // Side bets: iterate every hole, apply winner-takes-amount to pairwise
+  Object.keys(sideBets || {}).forEach((roundId) => {
+    const roundBets = sideBets[roundId] || {};
+    Object.keys(roundBets).forEach((holeIdx) => {
+      const bets = roundBets[holeIdx] || [];
+      bets.forEach((bet) => {
+        if (!bet.winner) return;
+        const loser = bet.winner === bet.player1 ? bet.player2 : bet.player1;
+        if (!PLAYERS.includes(bet.winner) || !PLAYERS.includes(loser)) return;
+        debts[loser][bet.winner] += bet.amount;
+        totals[bet.winner].side += bet.amount;
+        totals[loser].side -= bet.amount;
+      });
+    });
   });
 
   PLAYERS.forEach((p) => {
-    totals[p].total = totals[p].stroke + totals[p].match + totals[p].snake;
+    totals[p].total = totals[p].stroke + totals[p].match + totals[p].snake + totals[p].side;
     totals[p].stroke = Math.round(totals[p].stroke);
     totals[p].match = Math.round(totals[p].match);
     totals[p].snake = Math.round(totals[p].snake);
+    totals[p].side = Math.round(totals[p].side);
     totals[p].total = Math.round(totals[p].total);
   });
-  return totals;
+
+  // Simplify: if both A→B and B→A, net them
+  const netDebts = {};
+  PLAYERS.forEach((p) => {
+    netDebts[p] = {};
+    PLAYERS.forEach((q) => { if (p !== q) netDebts[p][q] = 0; });
+  });
+  for (let i = 0; i < PLAYERS.length; i++) {
+    for (let j = i + 1; j < PLAYERS.length; j++) {
+      const a = PLAYERS[i], b = PLAYERS[j];
+      const aToB = debts[a][b] || 0;
+      const bToA = debts[b][a] || 0;
+      const net = aToB - bToA;
+      if (net > 0) netDebts[a][b] = net;
+      else if (net < 0) netDebts[b][a] = -net;
+    }
+  }
+
+  return { totals, debts, netDebts };
+}
+
+// Helper: stroke payouts can be derived pairwise
+// With $70/$0/-$70 (or variant for ties), the 1st place "receives" from 2nd and 3rd.
+// We approximate pairwise from the amounts: distribute each player's payout proportionally.
+function addStrokeDebts(debts, strokePayouts) {
+  // Standard case: 1st gets +70 ($40 from 3rd, $30 from 2nd)
+  //                2nd gets  0 (−$30 to 1st, +$30 from 3rd) — effectively 3rd pays 2nd $30, 2nd pays 1st $30
+  //                3rd gets -70 (pays $40 to 1st, $30 to 2nd)
+  // Tie 1-2: split $35 each from 3rd (3rd pays each $35, total $70)
+  // Tie 2-3: each pays $35 to 1st
+  const entries = Object.entries(strokePayouts).sort((a, b) => b[1] - a[1]);
+  const [p1, v1] = entries[0];
+  const [p2, v2] = entries[1];
+  const [p3, v3] = entries[2];
+
+  if (v1 === 0 && v2 === 0 && v3 === 0) return; // no data
+
+  if (v1 === 70 && v2 === 0 && v3 === -70) {
+    debts[p3][p1] += 40;
+    debts[p2][p1] += 30;
+    debts[p3][p2] += 30;
+  } else if (v1 === 35 && v2 === 35 && v3 === -70) {
+    debts[p3][p1] += 35;
+    debts[p3][p2] += 35;
+  } else if (v1 === 70 && v2 === -35 && v3 === -35) {
+    debts[p2][p1] += 35;
+    debts[p3][p1] += 35;
+  }
+}
+
+// Match play is zero-sum per hole. matchDetails contains per-hole winners.
+function addMatchDebts(debts, matchDetails) {
+  if (!matchDetails) return;
+  matchDetails.forEach((h) => {
+    // h = { winner: 'solo'|'team'|null, soloPlayer, teamPlayers }
+    if (!h.winner) return;
+    if (h.winner === 'solo') {
+      // solo wins $8: $4 from each team member
+      h.teamPlayers.forEach((p) => { debts[p][h.soloPlayer] += MATCH_POINT_VALUE; });
+    } else if (h.winner === 'team') {
+      // team wins $4 each from solo ($8 total from solo)
+      h.teamPlayers.forEach((p) => { debts[h.soloPlayer][p] += MATCH_POINT_VALUE; });
+    }
+  });
 }
 
 // ============= ROUND VIEW =============
-function RoundView({ round, roundIdx, scores, snakes, ctp, saveScores, saveSnakes, saveCtp, setView, setRoundIdx }) {
+function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores, saveSnakes, saveCtp, saveSideBets, setView, setRoundIdx }) {
   const [currentHole, setCurrentHole] = useState(0);
+  const [showSideBetModal, setShowSideBetModal] = useState(false);
   const roundScores = scores[round.id] || {};
   const roundSnakes = snakes[round.id] || {};
   const roundCtp = ctp[round.id] || {};
+  const roundSideBets = sideBets[round.id] || {};
 
   useEffect(() => {
     for (let h = 0; h < round.holes; h++) {
@@ -752,6 +872,73 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, saveScores, saveSnake
       newCtp[round.id][holeIdx] = player;
     }
     saveCtp(newCtp);
+  };
+
+  const clearHole = (holeIdx) => {
+    if (!confirm(`Clear all scores for hole ${holeIdx + 1}? (Snakes, CTP, and side bets on this hole will also be cleared.)`)) return;
+    // Clear scores
+    const newScores = { ...scores };
+    if (newScores[round.id]?.[holeIdx]) {
+      const rc = { ...newScores[round.id] };
+      delete rc[holeIdx];
+      newScores[round.id] = rc;
+    }
+    saveScores(newScores);
+    // Clear snake
+    const newSnakes = { ...snakes };
+    if (newSnakes[round.id]?.[holeIdx]) {
+      const rs = { ...newSnakes[round.id] };
+      delete rs[holeIdx];
+      newSnakes[round.id] = rs;
+    }
+    saveSnakes(newSnakes);
+    // Clear CTP
+    const newCtp = { ...ctp };
+    if (newCtp[round.id]?.[holeIdx]) {
+      const rct = { ...newCtp[round.id] };
+      delete rct[holeIdx];
+      newCtp[round.id] = rct;
+    }
+    saveCtp(newCtp);
+    // Clear side bets
+    const newSB = { ...sideBets };
+    if (newSB[round.id]?.[holeIdx]) {
+      const rsb = { ...newSB[round.id] };
+      delete rsb[holeIdx];
+      newSB[round.id] = rsb;
+    }
+    saveSideBets(newSB);
+  };
+
+  const addSideBet = (holeIdx, bet) => {
+    // bet = { player1, player2, amount, winner: null }
+    const newSB = { ...sideBets };
+    if (!newSB[round.id]) newSB[round.id] = {};
+    if (!newSB[round.id][holeIdx]) newSB[round.id][holeIdx] = [];
+    const betWithId = { ...bet, id: Date.now().toString() };
+    newSB[round.id][holeIdx] = [...newSB[round.id][holeIdx], betWithId];
+    saveSideBets(newSB);
+  };
+
+  const setSideBetWinner = (holeIdx, betId, winner) => {
+    const newSB = { ...sideBets };
+    if (!newSB[round.id]?.[holeIdx]) return;
+    newSB[round.id][holeIdx] = newSB[round.id][holeIdx].map((b) =>
+      b.id === betId ? { ...b, winner: b.winner === winner ? null : winner } : b
+    );
+    saveSideBets(newSB);
+  };
+
+  const removeSideBet = (holeIdx, betId) => {
+    const newSB = { ...sideBets };
+    if (!newSB[round.id]?.[holeIdx]) return;
+    newSB[round.id][holeIdx] = newSB[round.id][holeIdx].filter((b) => b.id !== betId);
+    if (newSB[round.id][holeIdx].length === 0) {
+      const rsb = { ...newSB[round.id] };
+      delete rsb[holeIdx];
+      newSB[round.id] = rsb;
+    }
+    saveSideBets(newSB);
   };
 
   const results = computeRoundResults(round, scores, snakes, ctp);
@@ -822,11 +1009,24 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, saveScores, saveSnake
         roundScores={roundScores}
         roundSnakes={roundSnakes}
         roundCtp={roundCtp}
+        roundSideBets={roundSideBets}
         setHoleScore={setHoleScore}
         toggleSnake={toggleSnake}
         setCtpWinner={setCtpWinner}
+        clearHole={clearHole}
+        setShowSideBetModal={setShowSideBetModal}
+        setSideBetWinner={setSideBetWinner}
+        removeSideBet={removeSideBet}
         teams={teams}
       />
+
+      {showSideBetModal && (
+        <SideBetModal
+          holeIdx={currentHole}
+          onAdd={(bet) => { addSideBet(currentHole, bet); setShowSideBetModal(false); }}
+          onClose={() => setShowSideBetModal(false)}
+        />
+      )}
 
       {/* Nav */}
       <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
@@ -927,12 +1127,13 @@ function TeeBadge({ tee, size = 'sm' }) {
   );
 }
 
-function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, setHoleScore, toggleSnake, setCtpWinner, teams }) {
+function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, roundSideBets, setHoleScore, toggleSnake, setCtpWinner, clearHole, setShowSideBetModal, setSideBetWinner, removeSideBet, teams }) {
   const holeScores = roundScores[holeIdx] || {};
   const par = round.pars[holeIdx] || 4;
   const hcpIdx = round.handicapIndex[holeIdx] || holeIdx + 1;
   const snakeHolder = roundSnakes[holeIdx];
   const ctpWinner = roundCtp[holeIdx];
+  const holeSideBets = roundSideBets[holeIdx] || [];
 
   const segment = round.type === 'standard' ? Math.floor(holeIdx / 6) : null;
   const soloPlayer = teams ? teams[segment] : null;
@@ -1026,7 +1227,7 @@ function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, setHoleS
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontFamily: '"Special Elite", serif', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
                   {p}
-                  <TeeBadge tee={resolveTeeForHole(round.tees[p], hcpIdx)} />
+                  <TeeBadge tee={resolveTeeForHole(round.tees[p], holeIdx, round)} />
                   {hasStroke && (
                     <span style={{ fontSize: '9px', padding: '1px 4px', background: '#d4a574', color: '#0a1f0f', borderRadius: '2px', fontWeight: 700 }}>
                       +{strokesThisHole === 0.5 ? '½' : strokesThisHole}
@@ -1129,6 +1330,237 @@ function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, setHoleS
           {matchResult.text}
         </div>
       )}
+
+      {/* Side Bets on this hole */}
+      {holeSideBets.length > 0 && (
+        <div style={{ marginTop: '10px', padding: '8px', background: 'rgba(180, 120, 200, 0.08)', border: '1px solid rgba(180, 120, 200, 0.4)', borderRadius: '2px' }}>
+          <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#c090d0', marginBottom: '6px', textAlign: 'center' }}>⚡ SIDE BETS ⚡</div>
+          {holeSideBets.map((bet) => (
+            <div key={bet.id} style={{ marginBottom: '6px', padding: '6px', background: 'rgba(0,0,0,0.15)', borderRadius: '2px' }}>
+              <div style={{ fontSize: '11px', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>
+                  <span style={{ fontFamily: '"Special Elite", serif' }}>{bet.player1}</span> vs <span style={{ fontFamily: '"Special Elite", serif' }}>{bet.player2}</span>
+                  <span style={{ color: '#d4a574', marginLeft: '6px', fontWeight: 600 }}>${bet.amount}</span>
+                </span>
+                <button onClick={() => removeSideBet(holeIdx, bet.id)} style={{ background: 'transparent', border: 'none', color: 'rgba(196, 75, 75, 0.7)', fontSize: '11px', cursor: 'pointer' }}>✕</button>
+              </div>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button
+                  onClick={() => setSideBetWinner(holeIdx, bet.id, bet.player1)}
+                  style={{
+                    flex: 1, padding: '5px', fontSize: '10px',
+                    background: bet.winner === bet.player1 ? '#6b9e4e' : 'transparent',
+                    border: `1px solid ${bet.winner === bet.player1 ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)'}`,
+                    color: bet.winner === bet.player1 ? '#0a1f0f' : '#f4ead5',
+                    borderRadius: '2px', letterSpacing: '1px', fontWeight: bet.winner === bet.player1 ? 700 : 400,
+                  }}
+                >{bet.player1} WON</button>
+                <button
+                  onClick={() => setSideBetWinner(holeIdx, bet.id, bet.player2)}
+                  style={{
+                    flex: 1, padding: '5px', fontSize: '10px',
+                    background: bet.winner === bet.player2 ? '#6b9e4e' : 'transparent',
+                    border: `1px solid ${bet.winner === bet.player2 ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)'}`,
+                    color: bet.winner === bet.player2 ? '#0a1f0f' : '#f4ead5',
+                    borderRadius: '2px', letterSpacing: '1px', fontWeight: bet.winner === bet.player2 ? 700 : 400,
+                  }}
+                >{bet.player2} WON</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Action buttons: Side bet + Clear hole */}
+      <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+        <button
+          onClick={() => setShowSideBetModal(true)}
+          style={{
+            flex: 1, padding: '9px',
+            background: 'rgba(180, 120, 200, 0.15)',
+            border: '1px solid rgba(180, 120, 200, 0.5)',
+            color: '#c090d0',
+            borderRadius: '2px',
+            fontSize: '10px',
+            letterSpacing: '2px',
+            fontWeight: 600,
+          }}
+        >⚡ ADD SIDE BET</button>
+        <button
+          onClick={() => clearHole(holeIdx)}
+          style={{
+            padding: '9px 12px',
+            background: 'transparent',
+            border: '1px solid rgba(196, 75, 75, 0.5)',
+            color: 'rgba(196, 75, 75, 0.9)',
+            borderRadius: '2px',
+            fontSize: '10px',
+            letterSpacing: '2px',
+            fontWeight: 600,
+          }}
+        >↺ CLEAR HOLE</button>
+      </div>
+    </div>
+  );
+}
+
+// ============= SIDE BET MODAL =============
+function SideBetModal({ holeIdx, onAdd, onClose }) {
+  const [player1, setPlayer1] = useState(PLAYERS[0]);
+  const [player2, setPlayer2] = useState(PLAYERS[1]);
+  const [amount, setAmount] = useState('5');
+
+  const handleAdd = () => {
+    if (player1 === player2) { alert('Pick two different players'); return; }
+    const amt = parseFloat(amount);
+    if (isNaN(amt) || amt <= 0) { alert('Enter a valid amount'); return; }
+    onAdd({ player1, player2, amount: amt, winner: null });
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.75)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1000, padding: '20px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#0d2818',
+          border: '2px solid #c090d0',
+          borderRadius: '4px',
+          padding: '24px 20px',
+          maxWidth: '340px',
+          width: '100%',
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#c090d0', marginBottom: '4px' }}>⚡ SIDE BET · HOLE {holeIdx + 1} ⚡</div>
+          <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '24px', color: '#f4ead5' }}>Double or Nothing</div>
+        </div>
+
+        {/* Player 1 */}
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>PLAYER 1</div>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {PLAYERS.map((p) => (
+              <button
+                key={p}
+                onClick={() => setPlayer1(p)}
+                style={{
+                  flex: 1, padding: '10px',
+                  background: player1 === p ? '#d4a574' : 'transparent',
+                  border: `1px solid ${player1 === p ? '#d4a574' : 'rgba(212, 165, 116, 0.3)'}`,
+                  color: player1 === p ? '#0a1f0f' : '#f4ead5',
+                  borderRadius: '2px',
+                  fontSize: '12px',
+                  fontFamily: '"Special Elite", serif',
+                  fontWeight: player1 === p ? 700 : 400,
+                }}
+              >{p}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* VS */}
+        <div style={{ textAlign: 'center', color: '#c090d0', fontSize: '12px', letterSpacing: '2px', marginBottom: '14px' }}>VS</div>
+
+        {/* Player 2 */}
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>PLAYER 2</div>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {PLAYERS.map((p) => (
+              <button
+                key={p}
+                onClick={() => setPlayer2(p)}
+                style={{
+                  flex: 1, padding: '10px',
+                  background: player2 === p ? '#d4a574' : 'transparent',
+                  border: `1px solid ${player2 === p ? '#d4a574' : 'rgba(212, 165, 116, 0.3)'}`,
+                  color: player2 === p ? '#0a1f0f' : '#f4ead5',
+                  borderRadius: '2px',
+                  fontSize: '12px',
+                  fontFamily: '"Special Elite", serif',
+                  fontWeight: player2 === p ? 700 : 400,
+                  opacity: p === player1 ? 0.3 : 1,
+                }}
+                disabled={p === player1}
+              >{p}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Amount */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>AMOUNT ($)</div>
+          <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+            {[5, 10, 20, 50].map((v) => (
+              <button
+                key={v}
+                onClick={() => setAmount(String(v))}
+                style={{
+                  flex: 1, padding: '8px',
+                  background: amount === String(v) ? 'rgba(212, 165, 116, 0.3)' : 'transparent',
+                  border: `1px solid rgba(212, 165, 116, 0.3)`,
+                  color: '#f4ead5',
+                  borderRadius: '2px',
+                  fontSize: '11px',
+                }}
+              >${v}</button>
+            ))}
+          </div>
+          <input
+            type="number"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Custom"
+            style={{
+              width: '100%', padding: '10px',
+              background: '#0a1f0f',
+              border: '1px solid rgba(212, 165, 116, 0.4)',
+              color: '#f4ead5',
+              fontSize: '16px',
+              borderRadius: '2px',
+              fontFamily: '"DM Mono", monospace',
+              textAlign: 'center',
+            }}
+          />
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '12px',
+              background: 'transparent',
+              border: '1px solid rgba(244, 234, 213, 0.3)',
+              color: '#f4ead5',
+              borderRadius: '2px',
+              fontSize: '11px',
+              letterSpacing: '2px',
+            }}
+          >CANCEL</button>
+          <button
+            onClick={handleAdd}
+            style={{
+              flex: 1, padding: '12px',
+              background: '#c090d0',
+              border: '1px solid #c090d0',
+              color: '#0a1f0f',
+              borderRadius: '2px',
+              fontSize: '11px',
+              letterSpacing: '2px',
+              fontWeight: 700,
+            }}
+          >LOCK IT IN</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1347,17 +1779,9 @@ function computeRoundResults(round, scores, snakes, ctp) {
     }
   }
 
-  // Match payouts: zero-sum, $4 per point. Net redistribution — each player's $ = (their pts - avg pts) * $4 × 3
-  // Simpler: match $ net = (matchPoints[p] * 4) - (avgPoints * 4). But that doesn't zero-sum cleanly with 2/1/1.
-  // Correct zero-sum: Each point is worth $4 taken from the pool. Total points distributed = variable per hole.
-  // Per round: player's match $ = (points won × $4) - (their share of total points paid out × $4)
-  // Since at each hole either solo gets 2 or team gets 1 each (2 total distributed), payouts must zero-sum.
-  // Best interpretation: everyone starts at 0, each hole the winner(s) gain points, loser(s) lose points equivalently.
-  // Solo wins hole: solo +2, each of team -1 → net 0 for hole
-  // Team wins hole: each team +1, solo -2 → net 0 for hole
-  // So effectively: matchPayouts[p] = matchPoints[p] × $4 ... but we need to ALSO subtract points "lost"
-  // Let's recompute with both gains and losses
+  // Match payouts: zero-sum, $4 per point.
   const matchPayouts = { Frosty: 0, Herby: 0, Carlos: 0 };
+  const matchDetails = []; // per-hole match outcomes for debt computation
   if (round.type === 'standard') {
     const teams = generateTeams(round.id);
     for (let h = 0; h < round.holes; h++) {
@@ -1382,13 +1806,13 @@ function computeRoundResults(round, scores, snakes, ctp) {
       const teamBest = Math.min(...team.map((p) => netH[p]));
 
       if (soloNet < teamBest) {
-        // Solo wins: gets $8 (2 pts), each team member loses $4 (1 pt)
         matchPayouts[solo] += 2 * MATCH_POINT_VALUE;
         team.forEach((p) => { matchPayouts[p] -= 1 * MATCH_POINT_VALUE; });
+        matchDetails.push({ winner: 'solo', soloPlayer: solo, teamPlayers: team });
       } else if (teamBest < soloNet) {
-        // Team wins: each gets $4 (1 pt), solo loses $8 (2 pts)
         matchPayouts[solo] -= 2 * MATCH_POINT_VALUE;
         team.forEach((p) => { matchPayouts[p] += 1 * MATCH_POINT_VALUE; });
+        matchDetails.push({ winner: 'team', soloPlayer: solo, teamPlayers: team });
       }
     }
   }
@@ -1436,6 +1860,7 @@ function computeRoundResults(round, scores, snakes, ctp) {
     strokePayouts,
     matchPoints,
     matchPayouts,
+    matchDetails,
     snakesByPlayer,
     snakePayment,
     snakePayouts,
@@ -1444,8 +1869,8 @@ function computeRoundResults(round, scores, snakes, ctp) {
 }
 
 // ============= SUMMARY VIEW =============
-function SummaryView({ scores, snakes, ctp, setView }) {
-  const totals = computeTripTotals(scores, snakes, ctp);
+function SummaryView({ scores, snakes, ctp, sideBets, setView }) {
+  const { totals, debts, netDebts } = computeTripTotals(scores, snakes, ctp, sideBets);
   const maxTotal = Math.max(...PLAYERS.map((p) => totals[p].total));
 
   return (
@@ -1501,29 +1926,38 @@ function SummaryView({ scores, snakes, ctp, setView }) {
                 </div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '10px' }}>
-              <div style={{ padding: '7px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
-                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '9px' }}>STROKE</div>
-                <div style={{ fontSize: '15px', fontWeight: 600, color: t.stroke >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px', fontSize: '10px' }}>
+              <div style={{ padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '8px' }}>STROKE</div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: t.stroke >= 0 ? '#6b9e4e' : '#c44b4b' }}>
                   {t.stroke >= 0 ? '+' : ''}${t.stroke}
                 </div>
               </div>
-              <div style={{ padding: '7px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
-                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '9px' }}>MATCH · {t.matchPoints}pts</div>
-                <div style={{ fontSize: '15px', fontWeight: 600, color: t.match >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+              <div style={{ padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '8px' }}>MATCH</div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: t.match >= 0 ? '#6b9e4e' : '#c44b4b' }}>
                   {t.match >= 0 ? '+' : ''}${t.match}
                 </div>
               </div>
-              <div style={{ padding: '7px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
-                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '9px' }}>SNAKES</div>
-                <div style={{ fontSize: '15px', fontWeight: 600, color: t.snake >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+              <div style={{ padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '8px' }}>SNAKES</div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: t.snake >= 0 ? '#6b9e4e' : '#c44b4b' }}>
                   {t.snake >= 0 ? '+' : ''}${t.snake}
+                </div>
+              </div>
+              <div style={{ padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '8px' }}>⚡ SIDE</div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: t.side >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+                  {t.side >= 0 ? '+' : ''}${t.side}
                 </div>
               </div>
             </div>
           </div>
         );
       })}
+
+      {/* Settlements section */}
+      <Settlements debts={debts} netDebts={netDebts} />
 
       {/* Per-round breakdown */}
       <div style={{ marginTop: '24px' }}>
@@ -1562,6 +1996,100 @@ function SummaryView({ scores, snakes, ctp, setView }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ============= SETTLEMENTS =============
+function Settlements({ debts, netDebts }) {
+  const rawList = [];
+  PLAYERS.forEach((from) => {
+    PLAYERS.forEach((to) => {
+      if (from === to) return;
+      const amt = Math.round(debts[from]?.[to] || 0);
+      if (amt > 0) rawList.push({ from, to, amount: amt });
+    });
+  });
+
+  const netList = [];
+  PLAYERS.forEach((from) => {
+    PLAYERS.forEach((to) => {
+      if (from === to) return;
+      const amt = Math.round(netDebts[from]?.[to] || 0);
+      if (amt > 0) netList.push({ from, to, amount: amt });
+    });
+  });
+
+  if (rawList.length === 0 && netList.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: '24px' }}>
+      <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#d4a574', marginBottom: '10px', textAlign: 'center' }}>
+        ⟢ SETTLEMENTS ⟢
+      </div>
+
+      <div style={{
+        background: 'rgba(107, 158, 78, 0.08)',
+        border: '1px solid #6b9e4e',
+        padding: '14px',
+        borderRadius: '2px',
+        marginBottom: '10px',
+      }}>
+        <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#6b9e4e', marginBottom: '8px', fontWeight: 600 }}>
+          NET SETTLEMENT (WHO PAYS WHO)
+        </div>
+        {netList.length === 0 ? (
+          <div style={{ fontSize: '12px', opacity: 0.6, textAlign: 'center', padding: '8px' }}>Everyone's even!</div>
+        ) : (
+          netList.map((d, i) => (
+            <div key={i} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '8px 4px',
+              borderBottom: i < netList.length - 1 ? '1px dashed rgba(107, 158, 78, 0.2)' : 'none',
+            }}>
+              <div style={{ fontSize: '13px' }}>
+                <span style={{ fontFamily: '"Special Elite", serif', color: '#c44b4b' }}>{d.from}</span>
+                <span style={{ opacity: 0.5, margin: '0 8px' }}>→</span>
+                <span style={{ fontFamily: '"Special Elite", serif', color: '#6b9e4e' }}>{d.to}</span>
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: '#d4a574' }}>${d.amount}</div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <details style={{
+        background: 'rgba(244, 234, 213, 0.03)',
+        border: '1px solid rgba(212, 165, 116, 0.2)',
+        borderRadius: '2px',
+        padding: '10px 14px',
+      }}>
+        <summary style={{
+          fontSize: '10px', letterSpacing: '2px', color: '#d4a574',
+          cursor: 'pointer', fontWeight: 600, listStyle: 'none',
+        }}>
+          ▸ SHOW RAW DEBTS ({rawList.length} transactions)
+        </summary>
+        <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed rgba(212, 165, 116, 0.2)' }}>
+          {rawList.length === 0 ? (
+            <div style={{ fontSize: '11px', opacity: 0.6, textAlign: 'center', padding: '8px' }}>No debts yet</div>
+          ) : (
+            rawList.map((d, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '5px 0', fontSize: '11px', opacity: 0.8,
+              }}>
+                <div>
+                  <span style={{ fontFamily: '"Special Elite", serif' }}>{d.from}</span>
+                  <span style={{ opacity: 0.5, margin: '0 6px' }}>owes</span>
+                  <span style={{ fontFamily: '"Special Elite", serif' }}>{d.to}</span>
+                </div>
+                <div style={{ fontWeight: 600, color: '#d4a574' }}>${d.amount}</div>
+              </div>
+            ))
+          )}
+        </div>
+      </details>
     </div>
   );
 }
