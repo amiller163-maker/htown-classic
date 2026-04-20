@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, ChevronLeft, ChevronRight, RotateCcw, Check, Flag, Crown } from 'lucide-react';
+import { Trophy, ChevronLeft, ChevronRight, RotateCcw, Check, Flag, Crown, Grid3x3, X } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set as fbSet, remove as fbRemove } from 'firebase/database';
 
@@ -834,6 +834,7 @@ function addMatchDebts(debts, matchDetails) {
 function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores, saveSnakes, saveCtp, saveSideBets, setView, setRoundIdx }) {
   const [currentHole, setCurrentHole] = useState(0);
   const [showSideBetModal, setShowSideBetModal] = useState(false);
+  const [showScorecard, setShowScorecard] = useState(false);
   const roundScores = scores[round.id] || {};
   const roundSnakes = snakes[round.id] || {};
   const roundCtp = ctp[round.id] || {};
@@ -1015,6 +1016,29 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
         )}
       </div>
 
+      {/* View Full Scorecard button */}
+      <button
+        onClick={() => setShowScorecard(true)}
+        style={{
+          width: '100%',
+          padding: '10px',
+          marginBottom: '10px',
+          background: 'rgba(212, 165, 116, 0.12)',
+          border: '1px solid rgba(212, 165, 116, 0.5)',
+          color: '#d4a574',
+          borderRadius: '2px',
+          fontSize: '10px',
+          letterSpacing: '2px',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+        }}
+      >
+        <Grid3x3 size={13} /> VIEW FULL SCORECARD
+      </button>
+
       <HoleStrip round={round} currentHole={currentHole} setCurrentHole={setCurrentHole} roundScores={roundScores} />
 
       <HoleCard
@@ -1039,6 +1063,18 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
           holeIdx={currentHole}
           onAdd={(bet) => { addSideBet(currentHole, bet); setShowSideBetModal(false); }}
           onClose={() => setShowSideBetModal(false)}
+        />
+      )}
+
+      {showScorecard && (
+        <ScorecardModal
+          round={round}
+          roundScores={roundScores}
+          roundSnakes={roundSnakes}
+          roundCtp={roundCtp}
+          results={results}
+          onJumpToHole={(h) => { setCurrentHole(h); setShowScorecard(false); }}
+          onClose={() => setShowScorecard(false)}
         />
       )}
 
@@ -1574,6 +1610,342 @@ function SideBetModal({ holeIdx, onAdd, onClose }) {
               fontWeight: 700,
             }}
           >LOCK IT IN</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============= SCORECARD MODAL =============
+function ScorecardModal({ round, roundScores, roundSnakes, roundCtp, results, onJumpToHole, onClose }) {
+  // Build per-player running totals; split into Front 9 and Back 9 (for 18-hole rounds)
+  const is18 = round.holes === 18;
+  const frontHoles = is18 ? 9 : round.holes;
+  const backHoles = is18 ? 9 : 0;
+
+  const getScoreForHole = (p, h) => {
+    const raw = roundScores[h]?.[p];
+    if (raw == null || raw === '') return null;
+    const n = parseInt(raw, 10);
+    return isNaN(n) ? null : n;
+  };
+
+  const getScoreStyle = (gross, par) => {
+    if (gross == null) return { color: '#f4ead5', bg: 'transparent' };
+    const diff = gross - par;
+    // Eagle or better: bright gold double circle feel
+    if (diff <= -2) return { color: '#f4ead5', bg: '#d4a574', ring: true };
+    // Birdie: gold circle
+    if (diff === -1) return { color: '#0a1f0f', bg: '#d4a574' };
+    // Par: no decoration
+    if (diff === 0) return { color: '#f4ead5', bg: 'transparent' };
+    // Bogey: subtle outline
+    if (diff === 1) return { color: '#f4ead5', bg: 'transparent', border: true };
+    // Double+: red-ish outline
+    return { color: '#c44b4b', bg: 'transparent', border: true, doubleBorder: true };
+  };
+
+  const computeSubTotal = (p, startHole, count) => {
+    let total = 0;
+    let hasAny = false;
+    for (let h = startHole; h < startHole + count; h++) {
+      const s = getScoreForHole(p, h);
+      if (s != null) { total += s; hasAny = true; }
+    }
+    return hasAny ? total : null;
+  };
+
+  const computePar = (startHole, count) => {
+    let total = 0;
+    for (let h = startHole; h < startHole + count; h++) {
+      total += round.pars[h] || 0;
+    }
+    return total;
+  };
+
+  const renderSection = (label, startHole, holeCount) => {
+    if (holeCount === 0) return null;
+    const holeNumbers = Array.from({ length: holeCount }, (_, i) => startHole + i);
+
+    return (
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#d4a574', marginBottom: '6px', textAlign: 'center' }}>
+          {label}
+        </div>
+        <div style={{
+          overflowX: 'auto',
+          border: '1px solid rgba(212, 165, 116, 0.3)',
+          borderRadius: '2px',
+          background: 'rgba(0,0,0,0.2)',
+        }}>
+          <div style={{ minWidth: `${80 + holeCount * 28 + 50}px` }}>
+            {/* Header: Hole numbers */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: `60px repeat(${holeCount}, 28px) 50px`,
+              fontSize: '9px',
+              fontWeight: 700,
+              letterSpacing: '1px',
+              background: 'rgba(212, 165, 116, 0.15)',
+              borderBottom: '1px solid rgba(212, 165, 116, 0.3)',
+            }}>
+              <div style={{ padding: '6px 4px', color: '#d4a574' }}>HOLE</div>
+              {holeNumbers.map((h) => (
+                <div key={h} style={{ padding: '6px 0', textAlign: 'center', color: '#f4ead5' }}>
+                  {h + 1}
+                </div>
+              ))}
+              <div style={{ padding: '6px 4px', textAlign: 'center', color: '#d4a574' }}>
+                {holeCount === 9 ? (startHole === 0 ? 'OUT' : 'IN') : 'TOT'}
+              </div>
+            </div>
+            {/* Par row */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: `60px repeat(${holeCount}, 28px) 50px`,
+              fontSize: '10px',
+              background: 'rgba(0,0,0,0.3)',
+              borderBottom: '1px dashed rgba(212, 165, 116, 0.2)',
+            }}>
+              <div style={{ padding: '5px 4px', color: '#d4a574', letterSpacing: '1px', fontSize: '9px', fontWeight: 600 }}>PAR</div>
+              {holeNumbers.map((h) => (
+                <div key={h} style={{ padding: '5px 0', textAlign: 'center', opacity: 0.7 }}>
+                  {round.pars[h]}
+                </div>
+              ))}
+              <div style={{ padding: '5px 4px', textAlign: 'center', color: '#d4a574', fontWeight: 600 }}>
+                {computePar(startHole, holeCount)}
+              </div>
+            </div>
+            {/* Handicap index row (only for standard rounds) */}
+            {round.type === 'standard' && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: `60px repeat(${holeCount}, 28px) 50px`,
+                fontSize: '9px',
+                borderBottom: '1px solid rgba(212, 165, 116, 0.3)',
+                opacity: 0.55,
+              }}>
+                <div style={{ padding: '4px', letterSpacing: '1px', fontSize: '8px' }}>HCP</div>
+                {holeNumbers.map((h) => (
+                  <div key={h} style={{ padding: '4px 0', textAlign: 'center' }}>
+                    {round.handicapIndex[h]}
+                  </div>
+                ))}
+                <div style={{ padding: '4px' }}></div>
+              </div>
+            )}
+            {/* Player rows */}
+            {PLAYERS.map((p, idx) => {
+              const subTotal = computeSubTotal(p, startHole, holeCount);
+              return (
+                <div key={p} style={{
+                  display: 'grid',
+                  gridTemplateColumns: `60px repeat(${holeCount}, 28px) 50px`,
+                  fontSize: '13px',
+                  borderBottom: idx < PLAYERS.length - 1 ? '1px dashed rgba(212, 165, 116, 0.15)' : 'none',
+                }}>
+                  <div style={{
+                    padding: '8px 4px',
+                    fontFamily: '"Special Elite", serif',
+                    fontSize: '12px',
+                    color: '#d4a574',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}>
+                    {p}
+                  </div>
+                  {holeNumbers.map((h) => {
+                    const score = getScoreForHole(p, h);
+                    const par = round.pars[h];
+                    const style = getScoreStyle(score, par);
+                    const snakers = Array.isArray(roundSnakes[h]) ? roundSnakes[h] : (roundSnakes[h] ? [roundSnakes[h]] : []);
+                    const hasSnake = snakers.includes(p);
+                    const ctpWinner = roundCtp[h] === p;
+                    return (
+                      <div key={h} onClick={() => onJumpToHole(h)} style={{
+                        padding: '6px 0',
+                        textAlign: 'center',
+                        position: 'relative',
+                        cursor: 'pointer',
+                      }}>
+                        <div style={{
+                          width: '22px',
+                          height: '22px',
+                          margin: '0 auto',
+                          borderRadius: style.bg !== 'transparent' || style.doubleBorder ? '50%' : '2px',
+                          background: style.bg,
+                          border: style.border ? `1px solid ${style.doubleBorder ? '#c44b4b' : 'rgba(244, 234, 213, 0.5)'}` : (style.ring ? '2px solid #d4a574' : 'none'),
+                          boxShadow: style.ring ? 'inset 0 0 0 2px #0a1f0f, 0 0 0 2px #d4a574' : 'none',
+                          color: style.color,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1,
+                        }}>
+                          {score != null ? score : '—'}
+                        </div>
+                        {hasSnake && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '2px',
+                            right: '2px',
+                            fontSize: '8px',
+                            lineHeight: 1,
+                          }}>🐍</div>
+                        )}
+                        {ctpWinner && round.type === 'cliffhangers' && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '2px',
+                            left: '2px',
+                            fontSize: '8px',
+                            lineHeight: 1,
+                          }}>⛳</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div style={{
+                    padding: '8px 4px',
+                    textAlign: 'center',
+                    fontWeight: 700,
+                    color: '#d4a574',
+                    fontSize: '14px',
+                  }}>
+                    {subTotal != null ? subTotal : '—'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.85)',
+        zIndex: 1000,
+        overflowY: 'auto',
+        padding: '16px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#0d2818',
+          border: '2px solid #d4a574',
+          borderRadius: '4px',
+          padding: '18px 14px',
+          maxWidth: '100%',
+          margin: '0 auto',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div>
+            <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#d4a574' }}>SCORECARD</div>
+            <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '22px', color: '#f4ead5' }}>
+              {round.name}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: '34px', height: '34px',
+              background: 'transparent',
+              border: '1px solid rgba(212, 165, 116, 0.4)',
+              color: '#d4a574',
+              borderRadius: '2px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          ><X size={16} /></button>
+        </div>
+
+        {/* Scorecard sections */}
+        {is18 ? (
+          <>
+            {renderSection('FRONT NINE', 0, 9)}
+            {renderSection('BACK NINE', 9, 9)}
+            {/* Grand total */}
+            <div style={{
+              marginTop: '12px',
+              padding: '12px',
+              background: 'rgba(212, 165, 116, 0.1)',
+              border: '1px solid #d4a574',
+              borderRadius: '2px',
+            }}>
+              <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#d4a574', marginBottom: '8px', textAlign: 'center' }}>
+                TOTAL
+              </div>
+              {PLAYERS.map((p, idx) => {
+                const gross = results.grossStrokes[p];
+                const net = results.netStrokes[p];
+                return (
+                  <div key={p} style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 0.7fr 0.7fr 0.7fr',
+                    gap: '6px',
+                    padding: '6px 0',
+                    borderTop: idx === 0 ? 'none' : '1px dashed rgba(212, 165, 116, 0.15)',
+                    fontSize: '13px',
+                    alignItems: 'center',
+                  }}>
+                    <span style={{ fontFamily: '"Special Elite", serif' }}>{p}</span>
+                    <span style={{ textAlign: 'right', opacity: 0.7, fontSize: '11px' }}>
+                      GROSS <span style={{ color: '#f4ead5', fontWeight: 600, fontSize: '14px', marginLeft: '4px' }}>{gross != null ? gross : '—'}</span>
+                    </span>
+                    {round.type === 'standard' ? (
+                      <>
+                        <span style={{ textAlign: 'right', opacity: 0.5, fontSize: '11px' }}>
+                          HCP <span style={{ fontSize: '12px' }}>{round.strokes[p]}</span>
+                        </span>
+                        <span style={{ textAlign: 'right', fontSize: '11px', opacity: 0.7 }}>
+                          NET <span style={{ color: '#d4a574', fontWeight: 700, fontSize: '14px', marginLeft: '4px' }}>{net != null ? net : '—'}</span>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span></span>
+                        <span style={{ textAlign: 'right' }}></span>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          renderSection('FULL ROUND', 0, round.holes)
+        )}
+
+        {/* Legend */}
+        <div style={{ marginTop: '14px', padding: '10px', background: 'rgba(0,0,0,0.25)', borderRadius: '2px', fontSize: '9px', opacity: 0.75 }}>
+          <div style={{ letterSpacing: '2px', color: '#d4a574', marginBottom: '6px', fontSize: '9px', fontWeight: 600 }}>LEGEND</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid #d4a574', display: 'inline-block' }}></span> Eagle
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#d4a574', display: 'inline-block' }}></span> Birdie
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ width: '14px', height: '14px', borderRadius: '2px', border: '1px solid rgba(244, 234, 213, 0.5)', display: 'inline-block' }}></span> Bogey
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: '1px solid #c44b4b', display: 'inline-block' }}></span> Dbl+
+            </span>
+            <span>🐍 Snake</span>
+            {round.type === 'cliffhangers' && <span>⛳ CTP</span>}
+          </div>
+          <div style={{ marginTop: '6px', opacity: 0.55, fontSize: '9px' }}>Tap any cell to jump to that hole</div>
         </div>
       </div>
     </div>
