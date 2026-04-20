@@ -92,11 +92,10 @@ const ROUNDS = [
     day: 'Sunday 8AM',
     holes: 18,
     type: 'standard',
-    tees: { Frosty: 'Blue', Herby: 'Blue', Carlos: 'Blue/White' },
+    tees: { Frosty: 'Blue', Herby: 'Blue', Carlos: 'White' },
     strokes: { Frosty: 0, Herby: 7, Carlos: 2 },
     pars: [4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 4, 5, 4, 4, 3, 4, 5],
     handicapIndex: [3, 7, 17, 11, 9, 13, 15, 5, 1, 16, 12, 18, 2, 10, 4, 14, 8, 6],
-    forwardTeeHoles: [1, 2, 4, 5, 6, 11, 13, 14, 16],
   },
 ];
 
