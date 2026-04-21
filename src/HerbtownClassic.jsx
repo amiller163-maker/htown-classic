@@ -17,6 +17,11 @@ const db = getDatabase(firebaseApp);
 
 // ============= CONFIG =============
 const PLAYERS = ['Frosty', 'Herby', 'Carlos'];
+const PLAYER_QUOTES = {
+  Herby: "Bro, my NY 4 iron goes 220 though.",
+  Frosty: "Where the fuck are the fat girls?",
+  Carlos: "That should have been a fucking gimme.",
+};
 const SNAKE_VALUE = 3;
 const MATCH_POINT_VALUE = 4;
 
@@ -1202,6 +1207,56 @@ function PlayerAvatar({ player, size = 24, showBorder = false }) {
   );
 }
 
+// Shame display: sticker + speech bubble for snake holders
+function ShameSticker({ player, avatarSize = 90 }) {
+  const quote = PLAYER_QUOTES[player];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', maxWidth: '160px' }}>
+      {/* Speech bubble above avatar */}
+      {quote && (
+        <div style={{ position: 'relative', marginBottom: '4px' }}>
+          <div style={{
+            background: '#f4ead5',
+            color: '#0a1f0f',
+            padding: '8px 10px',
+            borderRadius: '12px',
+            fontSize: '11px',
+            fontStyle: 'italic',
+            fontFamily: 'Georgia, serif',
+            lineHeight: 1.3,
+            textAlign: 'center',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+            position: 'relative',
+            maxWidth: '160px',
+          }}>
+            "{quote}"
+            {/* Speech bubble tail */}
+            <div style={{
+              position: 'absolute',
+              bottom: '-6px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 0,
+              height: 0,
+              borderLeft: '7px solid transparent',
+              borderRight: '7px solid transparent',
+              borderTop: '8px solid #f4ead5',
+            }} />
+          </div>
+        </div>
+      )}
+      <PlayerAvatar player={player} size={avatarSize} />
+      <span style={{
+        fontFamily: '"Special Elite", serif',
+        color: '#c44b4b',
+        fontWeight: 700,
+        fontSize: '14px',
+        letterSpacing: '1px',
+      }}>{player}</span>
+    </div>
+  );
+}
+
 function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, roundSideBets, setHoleScore, toggleSnake, setCtpWinner, clearHole, setShowSideBetModal, setSideBetWinner, removeSideBet, teams }) {
   const holeScores = roundScores[holeIdx] || {};
   const par = round.pars[holeIdx] || 4;
@@ -2067,22 +2122,28 @@ function RoundSummary({ round, results }) {
         {results.snakePayment.pending && results.snakePayment.pendingHolders.length > 0 && (
           <div style={{
             marginTop: '10px',
-            padding: '10px 12px',
-            background: 'rgba(212, 165, 116, 0.08)',
-            border: '1px dashed rgba(212, 165, 116, 0.5)',
-            borderRadius: '2px',
-            fontSize: '11px',
+            padding: '16px 12px',
+            background: 'rgba(196, 75, 75, 0.08)',
+            border: '2px dashed rgba(196, 75, 75, 0.5)',
+            borderRadius: '4px',
             textAlign: 'center',
-            letterSpacing: '1px',
           }}>
-            <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#d4a574', marginBottom: '4px', fontWeight: 600 }}>
-              ROUND IN PROGRESS
+            <div style={{
+              fontSize: '10px',
+              letterSpacing: '4px',
+              color: '#c44b4b',
+              fontWeight: 700,
+              marginBottom: '14px',
+            }}>
+              🐍 CURRENTLY HOLDING THE SNAKE 🐍
             </div>
-            <div style={{ opacity: 0.8 }}>
-              Currently holding the snake: <span style={{ color: '#d4a574', fontWeight: 700 }}>{results.snakePayment.pendingHolders.join(' & ')}</span>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '14px', marginBottom: '12px', flexWrap: 'wrap' }}>
+              {results.snakePayment.pendingHolders.map((p) => (
+                <ShameSticker key={p} player={p} avatarSize={90} />
+              ))}
             </div>
-            <div style={{ fontSize: '9px', opacity: 0.55, marginTop: '4px' }}>
-              ({results.snakePayment.totalSnakes} snake{results.snakePayment.totalSnakes !== 1 ? 's' : ''} · ${results.snakePayment.amount} pot · payouts finalize when round completes)
+            <div style={{ fontSize: '10px', opacity: 0.7, letterSpacing: '1px', fontStyle: 'italic' }}>
+              {results.snakePayment.totalSnakes} snake{results.snakePayment.totalSnakes !== 1 ? 's' : ''} · ${results.snakePayment.amount} pot · finalizes when round ends
             </div>
           </div>
         )}
@@ -2118,24 +2179,15 @@ function RoundSummary({ round, results }) {
               letterSpacing: '4px',
               color: '#c44b4b',
               fontWeight: 700,
-              marginBottom: '12px',
+              marginBottom: '14px',
             }}>
               🐍 SNAKE HOLDER{results.snakePayment.losers.length > 1 ? 'S' : ''} 🐍
             </div>
 
-            {/* Big sticker faces - shame row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginBottom: '12px', flexWrap: 'wrap' }}>
+            {/* Big sticker faces with quotes */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '14px', marginBottom: '12px', flexWrap: 'wrap' }}>
               {results.snakePayment.losers.map((p) => (
-                <div key={p} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <PlayerAvatar player={p} size={90} />
-                  <span style={{
-                    fontFamily: '"Special Elite", serif',
-                    color: '#c44b4b',
-                    fontWeight: 700,
-                    fontSize: '14px',
-                    letterSpacing: '1px',
-                  }}>{p}</span>
-                </div>
+                <ShameSticker key={p} player={p} avatarSize={90} />
               ))}
             </div>
 
