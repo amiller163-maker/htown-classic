@@ -313,6 +313,8 @@ export default function HerbtownClassic() {
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .pulse-dot { animation: pulse 2s ease-in-out infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .safe-top { padding-top: max(env(safe-area-inset-top), 20px); }
+        .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
       `}</style>
 
       {view === 'home' && (
@@ -516,7 +518,7 @@ function HerbtownLogo() {
 // ============= HOME VIEW =============
 function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, resetAll }) {
   return (
-    <div className="fade-in" style={{ padding: '20px 18px 100px', maxWidth: '500px', margin: '0 auto' }}>
+    <div className="fade-in safe-top" style={{ padding: '8px 18px 100px', maxWidth: '500px', margin: '0 auto' }}>
       {/* Header - Logo */}
       <div style={{ textAlign: 'center', marginBottom: '20px', paddingTop: '8px' }}>
         <HerbtownLogo />
@@ -961,7 +963,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   const teams = round.type === 'standard' ? generateTeams(round.id) : null;
 
   return (
-    <div className="fade-in" style={{ padding: '16px 14px 120px', maxWidth: '500px', margin: '0 auto' }}>
+    <div className="fade-in safe-top" style={{ padding: '8px 14px 120px', maxWidth: '500px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
         <button
@@ -1179,7 +1181,7 @@ function TeeBadge({ tee, size = 'sm' }) {
 }
 
 // Circular player headshot sticker
-function PlayerAvatar({ player, size = 24, showBorder = true }) {
+function PlayerAvatar({ player, size = 24, showBorder = false }) {
   if (!player || !PLAYERS.includes(player)) return null;
   const src = `/${player.toLowerCase()}.png`;
   return (
@@ -1189,14 +1191,13 @@ function PlayerAvatar({ player, size = 24, showBorder = true }) {
       style={{
         width: `${size}px`,
         height: `${size}px`,
-        borderRadius: '50%',
-        objectFit: 'cover',
+        objectFit: 'contain',
         border: showBorder ? '2px solid #d4a574' : 'none',
-        background: '#0a1f0f',
+        borderRadius: showBorder ? '50%' : '0',
         flexShrink: 0,
         display: 'inline-block',
         verticalAlign: 'middle',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+        filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.5))',
       }}
     />
   );
@@ -2331,7 +2332,7 @@ function SummaryView({ scores, snakes, ctp, sideBets, setView }) {
   const maxTotal = Math.max(...PLAYERS.map((p) => totals[p].total));
 
   return (
-    <div className="fade-in" style={{ padding: '20px 16px 80px', maxWidth: '500px', margin: '0 auto' }}>
+    <div className="fade-in safe-top" style={{ padding: '8px 16px 80px', maxWidth: '500px', margin: '0 auto' }}>
       <button
         onClick={() => setView('home')}
         style={{
