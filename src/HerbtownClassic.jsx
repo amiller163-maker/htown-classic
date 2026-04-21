@@ -345,7 +345,7 @@ export default function HerbtownClassic() {
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .pulse-dot { animation: pulse 2s ease-in-out infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        .safe-top { padding-top: max(env(safe-area-inset-top), 20px); }
+        .safe-top { padding-top: calc(env(safe-area-inset-top, 20px) + 24px); }
         .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
       `}</style>
 
@@ -550,7 +550,7 @@ function HerbtownLogo() {
 // ============= HOME VIEW =============
 function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, resetAll }) {
   return (
-    <div className="fade-in safe-top" style={{ padding: '8px 18px 100px', maxWidth: '500px', margin: '0 auto' }}>
+    <div className="fade-in safe-top" style={{ paddingLeft: '18px', paddingRight: '18px', paddingBottom: '100px', maxWidth: '500px', margin: '0 auto' }}>
       {/* Header - Logo */}
       <div style={{ textAlign: 'center', marginBottom: '20px', paddingTop: '8px' }}>
         <HerbtownLogo />
@@ -994,7 +994,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   const teams = round.type === 'standard' ? generateTeams(round.id) : null;
 
   return (
-    <div className="fade-in safe-top" style={{ padding: '8px 14px 120px', maxWidth: '500px', margin: '0 auto' }}>
+    <div className="fade-in safe-top" style={{ paddingLeft: '14px', paddingRight: '14px', paddingBottom: '120px', maxWidth: '500px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
         <button
@@ -1146,7 +1146,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
         </button>
       </div>
 
-      <RoundSummary round={round} results={results} />
+      <RoundSummary round={round} results={results} roundSideBets={roundSideBets} />
     </div>
   );
 }
@@ -2069,7 +2069,33 @@ function ScorecardModal({ round, roundScores, roundSnakes, roundCtp, results, on
 }
 
 // ============= ROUND SUMMARY =============
-function RoundSummary({ round, results }) {
+function RoundSummary({ round, results, roundSideBets }) {
+  // Compute side bet totals per player (only settled bets with a winner count)
+  const sideBetTotals = { Frosty: 0, Herby: 0, Carlos: 0 };
+  const settledBetCount = { total: 0, pending: 0 };
+  if (roundSideBets) {
+    Object.values(roundSideBets).forEach((betsOnHole) => {
+      (betsOnHole || []).forEach((bet) => {
+        if (!bet.winner) { settledBetCount.pending += 1; return; }
+        settledBetCount.total += 1;
+        const loser = bet.winner === bet.player1 ? bet.player2 : bet.player1;
+        sideBetTotals[bet.winner] = (sideBetTotals[bet.winner] || 0) + bet.amount;
+        sideBetTotals[loser] = (sideBetTotals[loser] || 0) - bet.amount;
+      });
+    });
+  }
+
+  // Running round $ total per player (stroke + match + snake + side)
+  const runningTotals = {};
+  PLAYERS.forEach((p) => {
+    runningTotals[p] = Math.round(
+      (results.strokePayouts[p] || 0) +
+      (results.matchPayouts[p] || 0) +
+      (results.snakePayouts[p] || 0) +
+      (sideBetTotals[p] || 0)
+    );
+  });
+
   return (
     <div style={{
       marginTop: '20px',
@@ -2080,6 +2106,67 @@ function RoundSummary({ round, results }) {
     }}>
       <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#d4a574', marginBottom: '12px', textAlign: 'center' }}>
         ⟢ ROUND SCORECARD ⟢
+      </div>
+
+      {/* Round-so-far running totals */}
+      <div style={{
+        marginBottom: '16px',
+        padding: '10px',
+        background: 'rgba(212, 165, 116, 0.08)',
+        border: '1px solid rgba(212, 165, 116, 0.3)',
+        borderRadius: '2px',
+      }}>
+        <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '8px', fontWeight: 600, textAlign: 'center' }}>
+          WHERE THINGS STAND
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.55fr 0.55fr 0.55fr 0.5fr 0.65fr', gap: '4px', fontSize: '9px', opacity: 0.55, letterSpacing: '1px', marginBottom: '4px' }}>
+          <div>PLAYER</div>
+          <div style={{ textAlign: 'center' }}>STROKE</div>
+          <div style={{ textAlign: 'center' }}>MATCH</div>
+          <div style={{ textAlign: 'center' }}>🐍</div>
+          <div style={{ textAlign: 'center' }}>⚡</div>
+          <div style={{ textAlign: 'right' }}>ROUND</div>
+        </div>
+        {PLAYERS.map((p) => {
+          const stroke = Math.round(results.strokePayouts[p] || 0);
+          const match = Math.round(results.matchPayouts[p] || 0);
+          const snake = Math.round(results.snakePayouts[p] || 0);
+          const side = Math.round(sideBetTotals[p] || 0);
+          const total = runningTotals[p];
+          return (
+            <div key={p} style={{
+              display: 'grid',
+              gridTemplateColumns: '1.1fr 0.55fr 0.55fr 0.55fr 0.5fr 0.65fr',
+              gap: '4px',
+              padding: '5px 0',
+              fontSize: '12px',
+              alignItems: 'center',
+            }}>
+              <span style={{ fontFamily: '"Special Elite", serif', fontSize: '13px' }}>{p}</span>
+              <span style={{ textAlign: 'center', color: stroke >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
+                {stroke >= 0 ? '+' : ''}{stroke}
+              </span>
+              <span style={{ textAlign: 'center', color: match >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
+                {match >= 0 ? '+' : ''}{match}
+              </span>
+              <span style={{ textAlign: 'center', color: snake >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
+                {snake >= 0 ? '+' : ''}{snake}
+              </span>
+              <span style={{ textAlign: 'center', color: side >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
+                {side >= 0 ? '+' : ''}{side}
+              </span>
+              <span style={{ textAlign: 'right', fontWeight: 700, color: total >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '14px' }}>
+                {total >= 0 ? '+' : ''}${total}
+              </span>
+            </div>
+          );
+        })}
+        {(settledBetCount.total > 0 || settledBetCount.pending > 0) && (
+          <div style={{ fontSize: '9px', opacity: 0.55, marginTop: '6px', textAlign: 'center', letterSpacing: '1px' }}>
+            ⚡ {settledBetCount.total} side bet{settledBetCount.total !== 1 ? 's' : ''} settled
+            {settledBetCount.pending > 0 && ` · ${settledBetCount.pending} pending`}
+          </div>
+        )}
       </div>
 
       {/* Strokes */}
@@ -2252,21 +2339,6 @@ function RoundSummary({ round, results }) {
         </div>
       )}
 
-      {/* Round total */}
-      <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #d4a574' }}>
-        <div style={{ fontSize: '10px', opacity: 0.7, letterSpacing: '2px', marginBottom: '6px', color: '#d4a574' }}>ROUND TOTAL</div>
-        {PLAYERS.map((p) => {
-          const total = (results.strokePayouts[p] || 0) + (results.matchPayouts[p] || 0) + (results.snakePayouts[p] || 0);
-          return (
-            <div key={p} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '14px' }}>
-              <span style={{ fontFamily: '"Special Elite", serif' }}>{p}</span>
-              <span style={{ fontWeight: 700, color: total >= 0 ? '#6b9e4e' : '#c44b4b' }}>
-                {total >= 0 ? '+' : ''}${total}
-              </span>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -2461,7 +2533,7 @@ function SummaryView({ scores, snakes, ctp, sideBets, setView }) {
   const maxTotal = Math.max(...PLAYERS.map((p) => totals[p].total));
 
   return (
-    <div className="fade-in safe-top" style={{ padding: '8px 16px 80px', maxWidth: '500px', margin: '0 auto' }}>
+    <div className="fade-in safe-top" style={{ paddingLeft: '16px', paddingRight: '16px', paddingBottom: '80px', maxWidth: '500px', margin: '0 auto' }}>
       <button
         onClick={() => setView('home')}
         style={{
