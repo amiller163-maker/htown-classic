@@ -676,7 +676,6 @@ function TripStandings({ scores, snakes, ctp, sideBets }) {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               {leader && <Crown size={11} style={{ color: '#d4a574', flexShrink: 0 }} />}
-              <PlayerAvatar player={p} size={22} />
               <span style={{ fontFamily: '"Special Elite", serif', fontSize: '14px' }}>{p}</span>
             </div>
             <div style={{ textAlign: 'center', fontSize: '12px', color: t.stroke >= 0 ? '#6b9e4e' : '#c44b4b' }}>
