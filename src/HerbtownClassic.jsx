@@ -2064,6 +2064,28 @@ function RoundSummary({ round, results }) {
             </span>
           </div>
         ))}
+        {results.snakePayment.pending && results.snakePayment.pendingHolders.length > 0 && (
+          <div style={{
+            marginTop: '10px',
+            padding: '10px 12px',
+            background: 'rgba(212, 165, 116, 0.08)',
+            border: '1px dashed rgba(212, 165, 116, 0.5)',
+            borderRadius: '2px',
+            fontSize: '11px',
+            textAlign: 'center',
+            letterSpacing: '1px',
+          }}>
+            <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#d4a574', marginBottom: '4px', fontWeight: 600 }}>
+              ROUND IN PROGRESS
+            </div>
+            <div style={{ opacity: 0.8 }}>
+              Currently holding the snake: <span style={{ color: '#d4a574', fontWeight: 700 }}>{results.snakePayment.pendingHolders.join(' & ')}</span>
+            </div>
+            <div style={{ fontSize: '9px', opacity: 0.55, marginTop: '4px' }}>
+              ({results.snakePayment.totalSnakes} snake{results.snakePayment.totalSnakes !== 1 ? 's' : ''} · ${results.snakePayment.amount} pot · payouts finalize when round completes)
+            </div>
+          </div>
+        )}
         {results.snakePayment.wash && (
           <div style={{
             marginTop: '8px',
@@ -2298,7 +2320,9 @@ function computeRoundResults(round, scores, snakes, ctp) {
 
   const snakeAmount = totalSnakes * SNAKE_VALUE;
   const snakePayouts = { Frosty: 0, Herby: 0, Carlos: 0 };
-  if (lastHolders.length > 0 && totalSnakes > 0) {
+  // Only finalize snake payouts when the round is complete (all holes scored by all players)
+  // — until then, the "last holder" can still change as more snakes happen
+  if (allComplete && lastHolders.length > 0 && totalSnakes > 0) {
     const nonHolders = PLAYERS.filter((p) => !lastHolders.includes(p));
     if (nonHolders.length === 0) {
       // All 3 snaked on the last hole — wash, no payout
@@ -2313,11 +2337,13 @@ function computeRoundResults(round, scores, snakes, ctp) {
   }
 
   const snakePayment = {
-    losers: lastHolders,
-    loser: lastHolders.length === 1 ? lastHolders[0] : null, // kept for backward compat
+    losers: allComplete ? lastHolders : [],
+    loser: allComplete && lastHolders.length === 1 ? lastHolders[0] : null,
     totalSnakes,
     amount: snakeAmount,
-    wash: lastHolders.length === PLAYERS.length && totalSnakes > 0,
+    wash: allComplete && lastHolders.length === PLAYERS.length && totalSnakes > 0,
+    pending: !allComplete && totalSnakes > 0,
+    pendingHolders: lastHolders, // who currently holds — shown as "leading holder" if round in progress
   };
 
   // CTP
