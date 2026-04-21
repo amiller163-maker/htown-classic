@@ -40,7 +40,7 @@ const ROUNDS = [
   },
   {
     id: 'buffalo_fri',
-    name: 'Buffalo Ridge (Forecaddie)',
+    name: 'Buffalo Ridge',
     day: 'Friday 7AM',
     holes: 18,
     type: 'standard',
@@ -64,7 +64,7 @@ const ROUNDS = [
   },
   {
     id: 'ozarks_sat',
-    name: 'Ozarks (Forecaddie)',
+    name: 'Ozarks National',
     day: 'Saturday 7:40AM',
     holes: 18,
     type: 'standard',
@@ -674,6 +674,7 @@ function TripStandings({ scores, snakes, ctp, sideBets }) {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               {leader && <Crown size={11} style={{ color: '#d4a574', flexShrink: 0 }} />}
+              <PlayerAvatar player={p} size={22} />
               <span style={{ fontFamily: '"Special Elite", serif', fontSize: '14px' }}>{p}</span>
             </div>
             <div style={{ textAlign: 'center', fontSize: '12px', color: t.stroke >= 0 ? '#6b9e4e' : '#c44b4b' }}>
@@ -1174,6 +1175,30 @@ function TeeBadge({ tee, size = 'sm' }) {
     }}>
       {tee}
     </span>
+  );
+}
+
+// Circular player headshot sticker
+function PlayerAvatar({ player, size = 24, showBorder = true }) {
+  if (!player || !PLAYERS.includes(player)) return null;
+  const src = `/${player.toLowerCase()}.png`;
+  return (
+    <img
+      src={src}
+      alt={player}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: '50%',
+        objectFit: 'cover',
+        border: showBorder ? '2px solid #d4a574' : 'none',
+        background: '#0a1f0f',
+        flexShrink: 0,
+        display: 'inline-block',
+        verticalAlign: 'middle',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+      }}
+    />
   );
 }
 
@@ -2032,8 +2057,11 @@ function RoundSummary({ round, results }) {
           SNAKES · ${SNAKE_VALUE} each
         </div>
         {PLAYERS.map((p) => (
-          <div key={p} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '12px' }}>
-            <span style={{ fontFamily: '"Special Elite", serif' }}>{p}</span>
+          <div key={p} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', fontSize: '12px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <PlayerAvatar player={p} size={20} />
+              <span style={{ fontFamily: '"Special Elite", serif' }}>{p}</span>
+            </span>
             <span style={{ opacity: 0.7 }}>
               {results.snakesByPlayer[p]?.count || 0} snake{(results.snakesByPlayer[p]?.count || 0) !== 1 ? 's' : ''}
             </span>
@@ -2067,8 +2095,18 @@ function RoundSummary({ round, results }) {
             textAlign: 'center',
             letterSpacing: '1px',
           }}>
-            <span style={{ color: '#c44b4b', fontWeight: 700 }}>{results.snakePayment.losers.join(' & ')}</span> {results.snakePayment.losers.length > 1 ? 'split' : 'pays'} <span style={{ color: '#c44b4b', fontWeight: 700 }}>${results.snakePayment.amount}</span>
-            <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              {results.snakePayment.losers.map((p, i) => (
+                <span key={p} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <PlayerAvatar player={p} size={22} />
+                  <span style={{ color: '#c44b4b', fontWeight: 700 }}>{p}</span>
+                  {i < results.snakePayment.losers.length - 1 && <span style={{ opacity: 0.5 }}>&</span>}
+                </span>
+              ))}
+              <span style={{ opacity: 0.8 }}>{results.snakePayment.losers.length > 1 ? 'split' : 'pays'}</span>
+              <span style={{ color: '#c44b4b', fontWeight: 700, fontSize: '13px' }}>${results.snakePayment.amount}</span>
+            </div>
+            <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '4px' }}>
               ({results.snakePayment.totalSnakes} snake{results.snakePayment.totalSnakes !== 1 ? 's' : ''} · {results.snakePayment.losers.length > 1 ? `last ${results.snakePayment.losers.length} snakers split the pot` : 'last snaker pays'})
             </div>
           </div>
@@ -2336,6 +2374,7 @@ function SummaryView({ scores, snakes, ctp, sideBets, setView }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '26px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {leader && <Crown size={18} style={{ color: '#d4a574' }} />}
+                <PlayerAvatar player={p} size={36} />
                 {p}
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -2466,9 +2505,11 @@ function Settlements({ debts, netDebts }) {
               padding: '8px 4px',
               borderBottom: i < netList.length - 1 ? '1px dashed rgba(107, 158, 78, 0.2)' : 'none',
             }}>
-              <div style={{ fontSize: '13px' }}>
+              <div style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <PlayerAvatar player={d.from} size={24} />
                 <span style={{ fontFamily: '"Special Elite", serif', color: '#c44b4b' }}>{d.from}</span>
-                <span style={{ opacity: 0.5, margin: '0 8px' }}>→</span>
+                <span style={{ opacity: 0.5, margin: '0 4px' }}>→</span>
+                <PlayerAvatar player={d.to} size={24} />
                 <span style={{ fontFamily: '"Special Elite", serif', color: '#6b9e4e' }}>{d.to}</span>
               </div>
               <div style={{ fontSize: '16px', fontWeight: 700, color: '#d4a574' }}>${d.amount}</div>
