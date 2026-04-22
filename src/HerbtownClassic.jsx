@@ -951,11 +951,12 @@ function TripStandings({ scores, snakes, ctp, sideBets }) {
         ⟢ THE STANDINGS ⟢
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 0.55fr 0.55fr 0.45fr 0.5fr 0.75fr', gap: '5px', fontSize: '9px', opacity: 0.55, letterSpacing: '1px', marginBottom: '6px', padding: '0 2px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 0.5fr 0.5fr 0.4fr 0.4fr 0.45fr 0.7fr', gap: '4px', fontSize: '9px', opacity: 0.55, letterSpacing: '1px', marginBottom: '6px', padding: '0 2px' }}>
         <div>PLAYER</div>
         <div style={{ textAlign: 'center' }}>STROKE</div>
         <div style={{ textAlign: 'center' }}>MATCH</div>
         <div style={{ textAlign: 'center' }}>🐍</div>
+        <div style={{ textAlign: 'center' }}>⛳</div>
         <div style={{ textAlign: 'center' }}>⚡</div>
         <div style={{ textAlign: 'right' }}>TOTAL</div>
       </div>
@@ -965,8 +966,8 @@ function TripStandings({ scores, snakes, ctp, sideBets }) {
         return (
           <div key={p} style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 0.55fr 0.55fr 0.45fr 0.5fr 0.75fr',
-            gap: '5px',
+            gridTemplateColumns: '0.9fr 0.5fr 0.5fr 0.4fr 0.4fr 0.45fr 0.7fr',
+            gap: '4px',
             padding: '9px 2px',
             borderBottom: idx < 2 ? '1px dashed rgba(212, 165, 116, 0.15)' : 'none',
             alignItems: 'center',
@@ -975,19 +976,22 @@ function TripStandings({ scores, snakes, ctp, sideBets }) {
               {leader && <Crown size={11} style={{ color: '#d4a574', flexShrink: 0 }} />}
               <span style={{ fontFamily: '"Special Elite", serif', fontSize: '14px' }}>{p}</span>
             </div>
-            <div style={{ textAlign: 'center', fontSize: '12px', color: t.stroke >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+            <div style={{ textAlign: 'center', fontSize: '11px', color: t.stroke >= 0 ? '#6b9e4e' : '#c44b4b' }}>
               {t.stroke >= 0 ? '+' : ''}{t.stroke}
             </div>
-            <div style={{ textAlign: 'center', fontSize: '12px', color: t.match >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+            <div style={{ textAlign: 'center', fontSize: '11px', color: t.match >= 0 ? '#6b9e4e' : '#c44b4b' }}>
               {t.match >= 0 ? '+' : ''}{t.match}
             </div>
-            <div style={{ textAlign: 'center', fontSize: '12px', color: t.snake >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+            <div style={{ textAlign: 'center', fontSize: '11px', color: t.snake >= 0 ? '#6b9e4e' : '#c44b4b' }}>
               {t.snake >= 0 ? '+' : ''}{t.snake}
             </div>
-            <div style={{ textAlign: 'center', fontSize: '12px', color: t.side >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+            <div style={{ textAlign: 'center', fontSize: '11px', color: t.ctp >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+              {t.ctp >= 0 ? '+' : ''}{t.ctp}
+            </div>
+            <div style={{ textAlign: 'center', fontSize: '11px', color: t.side >= 0 ? '#6b9e4e' : '#c44b4b' }}>
               {t.side >= 0 ? '+' : ''}{t.side}
             </div>
-            <div style={{ textAlign: 'right', fontSize: '15px', fontWeight: 700, color: t.total >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+            <div style={{ textAlign: 'right', fontSize: '14px', fontWeight: 700, color: t.total >= 0 ? '#6b9e4e' : '#c44b4b' }}>
               {t.total >= 0 ? '+' : ''}${t.total}
             </div>
           </div>
@@ -999,7 +1003,7 @@ function TripStandings({ scores, snakes, ctp, sideBets }) {
 
 function computeTripTotals(scores, snakes, ctp, sideBets) {
   const totals = {};
-  PLAYERS.forEach((p) => { totals[p] = { stroke: 0, match: 0, snake: 0, side: 0, total: 0, matchPoints: 0 }; });
+  PLAYERS.forEach((p) => { totals[p] = { stroke: 0, match: 0, snake: 0, ctp: 0, side: 0, total: 0, matchPoints: 0 }; });
 
   // Pairwise debts: debts[from][to] = amount from owes to (positive)
   const debts = {};
@@ -1014,7 +1018,7 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
       totals[p].stroke += r.strokePayouts[p] || 0;
       totals[p].match += r.matchPayouts[p] || 0;
       totals[p].snake += r.snakePayouts[p] || 0;
-      totals[p].snake += r.ctpPayouts?.[p] || 0; // CTP rolls into snake bucket (mutually exclusive per round)
+      totals[p].ctp += r.ctpPayouts?.[p] || 0;
       totals[p].matchPoints += r.matchPoints[p] || 0;
     });
 
@@ -1068,10 +1072,11 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
   });
 
   PLAYERS.forEach((p) => {
-    totals[p].total = totals[p].stroke + totals[p].match + totals[p].snake + totals[p].side;
+    totals[p].total = totals[p].stroke + totals[p].match + totals[p].snake + totals[p].ctp + totals[p].side;
     totals[p].stroke = Math.round(totals[p].stroke);
     totals[p].match = Math.round(totals[p].match);
     totals[p].snake = Math.round(totals[p].snake);
+    totals[p].ctp = Math.round(totals[p].ctp);
     totals[p].side = Math.round(totals[p].side);
     totals[p].total = Math.round(totals[p].total);
   });
@@ -2639,25 +2644,27 @@ function RoundSummary({ round, results, roundSideBets }) {
         <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '8px', fontWeight: 600, textAlign: 'center' }}>
           WHERE THINGS STAND
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.55fr 0.55fr 0.55fr 0.5fr 0.65fr', gap: '4px', fontSize: '9px', opacity: 0.55, letterSpacing: '1px', marginBottom: '4px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 0.5fr 0.5fr 0.45fr 0.45fr 0.4fr 0.6fr', gap: '3px', fontSize: '9px', opacity: 0.55, letterSpacing: '1px', marginBottom: '4px' }}>
           <div>PLAYER</div>
           <div style={{ textAlign: 'center' }}>STROKE</div>
           <div style={{ textAlign: 'center' }}>MATCH</div>
-          <div style={{ textAlign: 'center' }}>{round.type === 'cliffhangers' ? '⛳' : '🐍'}</div>
+          <div style={{ textAlign: 'center' }}>🐍</div>
+          <div style={{ textAlign: 'center' }}>⛳</div>
           <div style={{ textAlign: 'center' }}>⚡</div>
           <div style={{ textAlign: 'right' }}>ROUND</div>
         </div>
         {PLAYERS.map((p) => {
           const stroke = Math.round(results.strokePayouts[p] || 0);
           const match = Math.round(results.matchPayouts[p] || 0);
-          const pool = Math.round((results.snakePayouts[p] || 0) + (results.ctpPayouts?.[p] || 0));
+          const snake = Math.round(results.snakePayouts[p] || 0);
+          const ctpVal = Math.round(results.ctpPayouts?.[p] || 0);
           const side = Math.round(sideBetTotals[p] || 0);
           const total = runningTotals[p];
           return (
             <div key={p} style={{
               display: 'grid',
-              gridTemplateColumns: '1.1fr 0.55fr 0.55fr 0.55fr 0.5fr 0.65fr',
-              gap: '4px',
+              gridTemplateColumns: '1fr 0.5fr 0.5fr 0.45fr 0.45fr 0.4fr 0.6fr',
+              gap: '3px',
               padding: '5px 0',
               fontSize: '12px',
               alignItems: 'center',
@@ -2669,13 +2676,16 @@ function RoundSummary({ round, results, roundSideBets }) {
               <span style={{ textAlign: 'center', color: match >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
                 {match >= 0 ? '+' : ''}{match}
               </span>
-              <span style={{ textAlign: 'center', color: pool >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
-                {pool >= 0 ? '+' : ''}{pool}
+              <span style={{ textAlign: 'center', color: snake >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
+                {snake >= 0 ? '+' : ''}{snake}
+              </span>
+              <span style={{ textAlign: 'center', color: ctpVal >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
+                {ctpVal >= 0 ? '+' : ''}{ctpVal}
               </span>
               <span style={{ textAlign: 'center', color: side >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
                 {side >= 0 ? '+' : ''}{side}
               </span>
-              <span style={{ textAlign: 'right', fontWeight: 700, color: total >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '14px' }}>
+              <span style={{ textAlign: 'right', fontWeight: 700, color: total >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '13px' }}>
                 {total >= 0 ? '+' : ''}${total}
               </span>
             </div>
@@ -3331,28 +3341,34 @@ function SummaryView({ scores, snakes, ctp, sideBets, setView }) {
                 </div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px', fontSize: '10px' }}>
-              <div style={{ padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
-                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '8px' }}>STROKE</div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: t.stroke >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '4px', fontSize: '10px' }}>
+              <div style={{ padding: '6px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                <div style={{ opacity: 0.5, letterSpacing: '1px', marginBottom: '2px', fontSize: '8px' }}>STROKE</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: t.stroke >= 0 ? '#6b9e4e' : '#c44b4b' }}>
                   {t.stroke >= 0 ? '+' : ''}${t.stroke}
                 </div>
               </div>
-              <div style={{ padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
-                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '8px' }}>MATCH</div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: t.match >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+              <div style={{ padding: '6px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                <div style={{ opacity: 0.5, letterSpacing: '1px', marginBottom: '2px', fontSize: '8px' }}>MATCH</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: t.match >= 0 ? '#6b9e4e' : '#c44b4b' }}>
                   {t.match >= 0 ? '+' : ''}${t.match}
                 </div>
               </div>
-              <div style={{ padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
-                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '8px' }}>SNAKES</div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: t.snake >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+              <div style={{ padding: '6px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                <div style={{ opacity: 0.5, letterSpacing: '1px', marginBottom: '2px', fontSize: '8px' }}>🐍 SNK</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: t.snake >= 0 ? '#6b9e4e' : '#c44b4b' }}>
                   {t.snake >= 0 ? '+' : ''}${t.snake}
                 </div>
               </div>
-              <div style={{ padding: '6px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
-                <div style={{ opacity: 0.5, letterSpacing: '1.5px', marginBottom: '2px', fontSize: '8px' }}>⚡ SIDE</div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: t.side >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+              <div style={{ padding: '6px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                <div style={{ opacity: 0.5, letterSpacing: '1px', marginBottom: '2px', fontSize: '8px' }}>⛳ CTP</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: t.ctp >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+                  {t.ctp >= 0 ? '+' : ''}${t.ctp}
+                </div>
+              </div>
+              <div style={{ padding: '6px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                <div style={{ opacity: 0.5, letterSpacing: '1px', marginBottom: '2px', fontSize: '8px' }}>⚡ SIDE</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: t.side >= 0 ? '#6b9e4e' : '#c44b4b' }}>
                   {t.side >= 0 ? '+' : ''}${t.side}
                 </div>
               </div>
@@ -3386,7 +3402,7 @@ function SummaryView({ scores, snakes, ctp, sideBets, setView }) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', fontSize: '11px' }}>
                 {PLAYERS.map((p) => {
-                  const roundTotal = (results.strokePayouts[p] || 0) + (results.matchPayouts[p] || 0) + (results.snakePayouts[p] || 0);
+                  const roundTotal = (results.strokePayouts[p] || 0) + (results.matchPayouts[p] || 0) + (results.snakePayouts[p] || 0) + (results.ctpPayouts?.[p] || 0);
                   return (
                     <div key={p} style={{ textAlign: 'center' }}>
                       <div style={{ opacity: 0.55, fontSize: '10px', marginBottom: '1px' }}>{p}</div>
