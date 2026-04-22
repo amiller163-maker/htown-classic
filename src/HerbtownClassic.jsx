@@ -677,14 +677,17 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
       {/* Trip Standings */}
       <TripStandings scores={scores} snakes={snakes} ctp={ctp} sideBets={sideBets} />
 
-      {/* Rounds */}
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#d4a574', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, transparent, #d4a574)' }}></div>
-          THE ROUNDS
-          <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, #d4a574, transparent)' }}></div>
-        </div>
-        {ROUNDS.map((r, i) => {
+      {/* Rounds — split into upcoming and past (locked) */}
+      {(() => {
+        const upcoming = [];
+        const past = [];
+        ROUNDS.forEach((r, i) => {
+          const isLocked = !!locks?.[r.id];
+          if (isLocked) past.push({ r, i });
+          else upcoming.push({ r, i });
+        });
+
+        const renderRoundButton = ({ r, i }) => {
           const progress = getRoundProgress(r, scores);
           const isLocked = !!locks?.[r.id];
           return (
@@ -694,45 +697,74 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
               style={{
                 width: '100%',
                 marginBottom: '8px',
-                padding: '14px 16px',
-                background: isLocked ? 'rgba(212, 165, 116, 0.1)' : (progress === r.holes ? 'rgba(107, 158, 78, 0.12)' : 'rgba(244, 234, 213, 0.05)'),
-                border: `1px solid ${isLocked ? '#d4a574' : (progress === r.holes ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)')}`,
+                padding: isLocked ? '12px 14px' : '14px 16px',
+                background: isLocked ? 'rgba(244, 234, 213, 0.03)' : (progress === r.holes ? 'rgba(107, 158, 78, 0.12)' : 'rgba(244, 234, 213, 0.05)'),
+                border: `1px solid ${isLocked ? 'rgba(212, 165, 116, 0.25)' : (progress === r.holes ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)')}`,
                 borderRadius: '2px',
                 color: '#f4ead5',
                 textAlign: 'left',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                opacity: isLocked ? 0.75 : 1,
               }}
             >
               <div>
                 <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#d4a574', opacity: 0.85 }}>
                   {r.day}
                 </div>
-                <div style={{ fontFamily: '"Special Elite", serif', fontSize: '17px', marginTop: '2px' }}>
+                <div style={{ fontFamily: '"Special Elite", serif', fontSize: isLocked ? '15px' : '17px', marginTop: '2px' }}>
                   {r.name}
                 </div>
-                <div style={{ display: 'flex', gap: '4px', marginTop: '5px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {PLAYERS.map((p) => (
-                    <span key={p} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9px', opacity: 0.75 }}>
-                      <span style={{ opacity: 0.7 }}>{p}:</span>
-                      <TeeBadge tee={r.tees[p]} />
-                    </span>
-                  ))}
-                </div>
-                <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '5px' }}>
-                  {progress}/{r.holes} holes{isLocked ? ' · LOCKED' : ''}
+                {!isLocked && (
+                  <div style={{ display: 'flex', gap: '4px', marginTop: '5px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {PLAYERS.map((p) => (
+                      <span key={p} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9px', opacity: 0.75 }}>
+                        <span style={{ opacity: 0.7 }}>{p}:</span>
+                        <TeeBadge tee={r.tees[p]} />
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ fontSize: '10px', opacity: 0.5, marginTop: isLocked ? '2px' : '5px' }}>
+                  {progress}/{r.holes} holes{isLocked ? ' · COMPLETE' : ''}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {isLocked && <Lock size={14} style={{ color: '#d4a574' }} />}
+                {isLocked && <Lock size={13} style={{ color: '#d4a574', opacity: 0.7 }} />}
                 {!isLocked && progress === r.holes && <Check size={16} style={{ color: '#6b9e4e' }} />}
                 <ChevronRight size={18} style={{ opacity: 0.5 }} />
               </div>
             </button>
           );
-        })}
-      </div>
+        };
+
+        return (
+          <>
+            {upcoming.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#d4a574', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, transparent, #d4a574)' }}></div>
+                  THE ROUNDS
+                  <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, #d4a574, transparent)' }}></div>
+                </div>
+                {upcoming.map(renderRoundButton)}
+              </div>
+            )}
+
+            {past.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '10px', letterSpacing: '3px', color: 'rgba(212, 165, 116, 0.6)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, transparent, rgba(212, 165, 116, 0.4))' }}></div>
+                  PAST ROUNDS
+                  <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, rgba(212, 165, 116, 0.4), transparent)' }}></div>
+                </div>
+                {past.map(renderRoundButton)}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Footer actions */}
       <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
@@ -1415,21 +1447,37 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, save
         >
           <ChevronLeft size={14} /> PREV
         </button>
-        <button
-          onClick={() => currentHole < round.holes - 1 && setCurrentHole(currentHole + 1)}
-          disabled={currentHole === round.holes - 1}
-          style={{
-            flex: 1, padding: '14px',
-            background: '#d4a574',
-            border: '1px solid #d4a574',
-            color: '#0a1f0f', borderRadius: '2px',
-            opacity: currentHole === round.holes - 1 ? 0.3 : 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-            fontSize: '11px', letterSpacing: '2px', fontWeight: 700,
-          }}
-        >
-          NEXT HOLE <ChevronRight size={14} />
-        </button>
+        {currentHole === round.holes - 1 && roundComplete && !isLocked ? (
+          <button
+            onClick={toggleLock}
+            style={{
+              flex: 1, padding: '14px',
+              background: '#6b9e4e',
+              border: '2px solid #6b9e4e',
+              color: '#0a1f0f', borderRadius: '2px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              fontSize: '11px', letterSpacing: '2px', fontWeight: 700,
+            }}
+          >
+            <Lock size={14} /> COMPLETE ROUND
+          </button>
+        ) : (
+          <button
+            onClick={() => currentHole < round.holes - 1 && setCurrentHole(currentHole + 1)}
+            disabled={currentHole === round.holes - 1}
+            style={{
+              flex: 1, padding: '14px',
+              background: '#d4a574',
+              border: '1px solid #d4a574',
+              color: '#0a1f0f', borderRadius: '2px',
+              opacity: currentHole === round.holes - 1 ? 0.3 : 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              fontSize: '11px', letterSpacing: '2px', fontWeight: 700,
+            }}
+          >
+            NEXT HOLE <ChevronRight size={14} />
+          </button>
+        )}
       </div>
 
       <RoundSummary round={round} results={results} roundSideBets={roundSideBets} />
