@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, ChevronLeft, ChevronRight, RotateCcw, Check, Flag, Crown, Grid3x3, X } from 'lucide-react';
+import { Trophy, ChevronLeft, ChevronRight, RotateCcw, Check, Flag, Crown, Grid3x3, X, Lock, Unlock } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set as fbSet, remove as fbRemove } from 'firebase/database';
 
@@ -18,9 +18,29 @@ const db = getDatabase(firebaseApp);
 // ============= CONFIG =============
 const PLAYERS = ['Frosty', 'Herby', 'Carlos'];
 const PLAYER_QUOTES = {
-  Herby: "Bro, my NY 4 iron goes 220 though.",
-  Frosty: "Where the fuck are the fat girls?",
-  Carlos: "That should have been a fucking gimme.",
+  Herby: [
+    "Bro, my NY 4 iron goes 220 though.",
+    "Bro, I'm still like 70 30 maybe I need a powerpoint.",
+    "Carlos fucking said good shot too early.",
+    "Nikki calls it my sleep app.",
+    "Bro there is no fish on the menu here for me.",
+  ],
+  Frosty: [
+    "Where the fuck are the fat girls?",
+    "That 3 putt came quicker than me with Olivia.",
+    "I need Eddie and Lauren <3 here to motivate me.",
+    "Did I tell you about the worms in my balls?",
+    "Josh Larson touched me.",
+    "Caddy is like a lax bro, I want to fuck him.",
+  ],
+  Carlos: [
+    "That should have been a fucking gimme.",
+    "Would you like to spin that $2.50?",
+    "Anyone want a nootropic?",
+    "I suck more dick than Molly Zung.",
+    "Pretty sure that was a stadium lie.",
+    "Fucking Fielding fucked me so hard.",
+  ],
 };
 const SNAKE_VALUE = 3;
 const MATCH_POINT_VALUE = 4;
@@ -254,6 +274,7 @@ export default function HerbtownClassic() {
   const [snakes, setSnakes] = useState({});
   const [ctp, setCtp] = useState({});
   const [sideBets, setSideBets] = useState({});
+  const [locks, setLocks] = useState({});
   const [view, setView] = useState('home');
 
   const loadData = useCallback(() => {
@@ -262,6 +283,7 @@ export default function HerbtownClassic() {
     const snakesRef = ref(db, 'snakes');
     const ctpRef = ref(db, 'ctp');
     const sideBetsRef = ref(db, 'sideBets');
+    const locksRef = ref(db, 'locks');
 
     const unsubScores = onValue(scoresRef, (snap) => {
       setScores(snap.val() || {});
@@ -273,8 +295,9 @@ export default function HerbtownClassic() {
     const unsubSnakes = onValue(snakesRef, (snap) => setSnakes(snap.val() || {}));
     const unsubCtp = onValue(ctpRef, (snap) => setCtp(snap.val() || {}));
     const unsubSideBets = onValue(sideBetsRef, (snap) => setSideBets(snap.val() || {}));
+    const unsubLocks = onValue(locksRef, (snap) => setLocks(snap.val() || {}));
 
-    return () => { unsubScores(); unsubSnakes(); unsubCtp(); unsubSideBets(); };
+    return () => { unsubScores(); unsubSnakes(); unsubCtp(); unsubSideBets(); unsubLocks(); };
   }, []);
 
   useEffect(() => {
@@ -310,6 +333,13 @@ export default function HerbtownClassic() {
       else await fbSet(ref(db, 'sideBets'), newSideBets);
     } catch (e) { console.error('save sideBets:', e); }
   };
+  const saveLocks = async (newLocks) => {
+    setLocks(newLocks);
+    try {
+      if (Object.keys(newLocks).length === 0) await fbRemove(ref(db, 'locks'));
+      else await fbSet(ref(db, 'locks'), newLocks);
+    } catch (e) { console.error('save locks:', e); }
+  };
 
   const resetAll = async () => {
     if (!confirm('Reset ALL scores for ALL rounds? This cannot be undone.')) return;
@@ -317,6 +347,7 @@ export default function HerbtownClassic() {
     await saveSnakes({});
     await saveCtp({});
     await saveSideBets({});
+    await saveLocks({});
   };
 
   if (loading) {
@@ -357,6 +388,7 @@ export default function HerbtownClassic() {
           snakes={snakes}
           ctp={ctp}
           sideBets={sideBets}
+          locks={locks}
           resetAll={resetAll}
         />
       )}
@@ -368,10 +400,12 @@ export default function HerbtownClassic() {
           snakes={snakes}
           ctp={ctp}
           sideBets={sideBets}
+          locks={locks}
           saveScores={saveScores}
           saveSnakes={saveSnakes}
           saveCtp={saveCtp}
           saveSideBets={saveSideBets}
+          saveLocks={saveLocks}
           setView={setView}
           setRoundIdx={setRoundIdx}
         />
@@ -548,7 +582,7 @@ function HerbtownLogo() {
 }
 
 // ============= HOME VIEW =============
-function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, resetAll }) {
+function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, resetAll }) {
   return (
     <div className="fade-in safe-top" style={{ paddingLeft: '18px', paddingRight: '18px', paddingBottom: '100px', maxWidth: '500px', margin: '0 auto' }}>
       {/* Header - Logo */}
@@ -559,6 +593,9 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, resetAl
           LIVE · SYNCED
         </div>
       </div>
+
+      {/* Live Tracker */}
+      <LiveTracker scores={scores} setRoundIdx={setRoundIdx} setView={setView} />
 
       {/* Trip Standings */}
       <TripStandings scores={scores} snakes={snakes} ctp={ctp} sideBets={sideBets} />
@@ -572,6 +609,7 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, resetAl
         </div>
         {ROUNDS.map((r, i) => {
           const progress = getRoundProgress(r, scores);
+          const isLocked = !!locks?.[r.id];
           return (
             <button
               key={r.id}
@@ -580,8 +618,8 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, resetAl
                 width: '100%',
                 marginBottom: '8px',
                 padding: '14px 16px',
-                background: progress === r.holes ? 'rgba(107, 158, 78, 0.12)' : 'rgba(244, 234, 213, 0.05)',
-                border: `1px solid ${progress === r.holes ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)'}`,
+                background: isLocked ? 'rgba(212, 165, 116, 0.1)' : (progress === r.holes ? 'rgba(107, 158, 78, 0.12)' : 'rgba(244, 234, 213, 0.05)'),
+                border: `1px solid ${isLocked ? '#d4a574' : (progress === r.holes ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)')}`,
                 borderRadius: '2px',
                 color: '#f4ead5',
                 textAlign: 'left',
@@ -606,11 +644,12 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, resetAl
                   ))}
                 </div>
                 <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '5px' }}>
-                  {progress}/{r.holes} holes
+                  {progress}/{r.holes} holes{isLocked ? ' · LOCKED' : ''}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {progress === r.holes && <Check size={16} style={{ color: '#6b9e4e' }} />}
+                {isLocked && <Lock size={14} style={{ color: '#d4a574' }} />}
+                {!isLocked && progress === r.holes && <Check size={16} style={{ color: '#6b9e4e' }} />}
                 <ChevronRight size={18} style={{ opacity: 0.5 }} />
               </div>
             </button>
@@ -640,18 +679,6 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, resetAl
         >
           <Trophy size={14} /> THE LEDGER
         </button>
-        <button
-          onClick={resetAll}
-          style={{
-            padding: '14px 16px',
-            background: 'transparent',
-            border: '1px solid rgba(244, 234, 213, 0.2)',
-            borderRadius: '2px',
-            color: 'rgba(244, 234, 213, 0.5)',
-          }}
-        >
-          <RotateCcw size={14} />
-        </button>
       </div>
     </div>
   );
@@ -667,6 +694,121 @@ function getRoundProgress(round, scores) {
     }
   }
   return completed;
+}
+
+// ============= LIVE TRACKER =============
+function LiveTracker({ scores, setRoundIdx, setView }) {
+  // Find the "current" round: first round with any scores that isn't fully complete,
+  // or the most recently-touched incomplete round.
+  let activeRoundIdx = -1;
+  let activeRound = null;
+  let currentHole = 0;
+
+  for (let i = 0; i < ROUNDS.length; i++) {
+    const r = ROUNDS[i];
+    const rs = scores[r.id] || {};
+    const hasAnyScore = Object.keys(rs).length > 0;
+    const completed = getRoundProgress(r, scores);
+    if (hasAnyScore && completed < r.holes) {
+      activeRoundIdx = i;
+      activeRound = r;
+      // Find first hole without all 3 scores
+      for (let h = 0; h < r.holes; h++) {
+        const hs = rs[h] || {};
+        if (!PLAYERS.every((p) => hs[p] != null && hs[p] !== '')) {
+          currentHole = h;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  // If no in-progress round, nothing to show
+  if (!activeRound) return null;
+
+  const roundScores = scores[activeRound.id] || {};
+
+  // Running total scores per player (through most recent completed hole)
+  const running = {};
+  const holesCompleted = {};
+  PLAYERS.forEach((p) => {
+    running[p] = 0;
+    holesCompleted[p] = 0;
+    for (let h = 0; h < activeRound.holes; h++) {
+      const s = roundScores[h]?.[p];
+      if (s != null && s !== '') {
+        const n = parseInt(s, 10);
+        if (!isNaN(n)) {
+          running[p] += n;
+          holesCompleted[p] += 1;
+        }
+      }
+    }
+  });
+
+  // Par through the number of holes they've played
+  const parThrough = (p) => {
+    let par = 0;
+    for (let h = 0; h < holesCompleted[p]; h++) {
+      par += activeRound.pars[h] || 0;
+    }
+    return par;
+  };
+
+  return (
+    <div
+      onClick={() => { setRoundIdx(activeRoundIdx); setView('round'); }}
+      style={{
+        marginBottom: '14px',
+        padding: '14px',
+        background: 'rgba(107, 158, 78, 0.08)',
+        border: '1px solid #6b9e4e',
+        borderRadius: '2px',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="pulse-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6b9e4e', display: 'inline-block' }}></span>
+          <div>
+            <div style={{ fontSize: '9px', letterSpacing: '3px', color: '#6b9e4e', fontWeight: 700 }}>LIVE NOW</div>
+            <div style={{ fontFamily: '"Special Elite", serif', fontSize: '15px', color: '#f4ead5' }}>{activeRound.name}</div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '9px', letterSpacing: '2px', opacity: 0.6 }}>HOLE</div>
+          <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '26px', color: '#d4a574', lineHeight: 1 }}>
+            {currentHole + 1}
+          </div>
+        </div>
+      </div>
+
+      {/* Per-player running line */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '10px' }}>
+        {PLAYERS.map((p) => {
+          const score = running[p];
+          const par = parThrough(p);
+          const toPar = score - par;
+          const toParLabel = holesCompleted[p] === 0 ? '—' : (toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : `${toPar}`));
+          const toParColor = toPar < 0 ? '#6b9e4e' : (toPar > 0 ? '#c44b4b' : '#d4a574');
+          return (
+            <div key={p} style={{ padding: '6px', background: 'rgba(0,0,0,0.25)', borderRadius: '2px', textAlign: 'center' }}>
+              <div style={{ fontFamily: '"Special Elite", serif', fontSize: '11px', color: '#d4a574', marginBottom: '2px' }}>{p}</div>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: toParColor, lineHeight: 1 }}>{toParLabel}</div>
+              <div style={{ fontSize: '9px', opacity: 0.55, marginTop: '2px' }}>
+                {holesCompleted[p] === 0 ? 'not yet' : `thru ${holesCompleted[p]}`}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: '8px', fontSize: '9px', opacity: 0.55, textAlign: 'center', letterSpacing: '1px' }}>
+        TAP TO VIEW ROUND
+      </div>
+    </div>
+  );
 }
 
 // ============= TRIP STANDINGS =============
@@ -865,7 +1007,7 @@ function addMatchDebts(debts, matchDetails) {
 }
 
 // ============= ROUND VIEW =============
-function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores, saveSnakes, saveCtp, saveSideBets, setView, setRoundIdx }) {
+function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, saveScores, saveSnakes, saveCtp, saveSideBets, saveLocks, setView, setRoundIdx }) {
   const [currentHole, setCurrentHole] = useState(0);
   const [showSideBetModal, setShowSideBetModal] = useState(false);
   const [showScorecard, setShowScorecard] = useState(false);
@@ -873,6 +1015,28 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   const roundSnakes = snakes[round.id] || {};
   const roundCtp = ctp[round.id] || {};
   const roundSideBets = sideBets[round.id] || {};
+  const isLocked = !!locks?.[round.id];
+
+  // Round is complete when all holes have all 3 player scores
+  const roundComplete = (() => {
+    for (let h = 0; h < round.holes; h++) {
+      const hs = roundScores[h] || {};
+      if (!PLAYERS.every((p) => hs[p] != null && hs[p] !== '')) return false;
+    }
+    return true;
+  })();
+
+  const toggleLock = async () => {
+    if (isLocked) {
+      if (!confirm('Unlock this round? Scores will become editable again.')) return;
+      const newLocks = { ...locks };
+      delete newLocks[round.id];
+      await saveLocks(newLocks);
+    } else {
+      if (!confirm('Lock in this round? No more edits will be allowed (can be unlocked if needed).')) return;
+      await saveLocks({ ...locks, [round.id]: true });
+    }
+  };
 
   useEffect(() => {
     for (let h = 0; h < round.holes; h++) {
@@ -886,6 +1050,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   }, [round.id]);
 
   const setHoleScore = (holeIdx, player, value) => {
+    if (isLocked) return;
     const newScores = { ...scores };
     if (!newScores[round.id]) newScores[round.id] = {};
     if (!newScores[round.id][holeIdx]) newScores[round.id][holeIdx] = {};
@@ -894,6 +1059,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   };
 
   const toggleSnake = (holeIdx, player) => {
+    if (isLocked) return;
     const newSnakes = { ...snakes };
     if (!newSnakes[round.id]) newSnakes[round.id] = {};
     // Normalize current value to array (handles legacy string entries)
@@ -913,6 +1079,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   };
 
   const setCtpWinner = (holeIdx, player) => {
+    if (isLocked) return;
     const newCtp = { ...ctp };
     if (!newCtp[round.id]) newCtp[round.id] = {};
     if (newCtp[round.id][holeIdx] === player) {
@@ -924,6 +1091,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   };
 
   const clearHole = (holeIdx) => {
+    if (isLocked) return;
     if (!confirm(`Clear all scores for hole ${holeIdx + 1}? (Snakes, CTP, and side bets on this hole will also be cleared.)`)) return;
     // Clear scores
     const newScores = { ...scores };
@@ -960,6 +1128,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   };
 
   const addSideBet = (holeIdx, bet) => {
+    if (isLocked) return;
     // bet = { player1, player2, amount, winner: null }
     const newSB = { ...sideBets };
     if (!newSB[round.id]) newSB[round.id] = {};
@@ -970,6 +1139,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   };
 
   const setSideBetWinner = (holeIdx, betId, winner) => {
+    if (isLocked) return;
     const newSB = { ...sideBets };
     if (!newSB[round.id]?.[holeIdx]) return;
     newSB[round.id][holeIdx] = newSB[round.id][holeIdx].map((b) =>
@@ -979,6 +1149,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
   };
 
   const removeSideBet = (holeIdx, betId) => {
+    if (isLocked) return;
     const newSB = { ...sideBets };
     if (!newSB[round.id]?.[holeIdx]) return;
     newSB[round.id][holeIdx] = newSB[round.id][holeIdx].filter((b) => b.id !== betId);
@@ -1049,6 +1220,28 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
           </div>
         )}
       </div>
+
+      {/* Lock banner */}
+      {isLocked && (
+        <div style={{
+          padding: '12px',
+          marginBottom: '10px',
+          background: 'rgba(212, 165, 116, 0.15)',
+          border: '2px solid #d4a574',
+          borderRadius: '2px',
+          textAlign: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+        }}>
+          <Lock size={18} style={{ color: '#d4a574' }} />
+          <div>
+            <div style={{ fontSize: '11px', letterSpacing: '3px', color: '#d4a574', fontWeight: 700 }}>ROUND LOCKED</div>
+            <div style={{ fontSize: '9px', opacity: 0.7, letterSpacing: '1px', marginTop: '2px' }}>No more edits allowed</div>
+          </div>
+        </div>
+      )}
 
       {/* View Full Scorecard button */}
       <button
@@ -1147,6 +1340,31 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, saveScores,
       </div>
 
       <RoundSummary round={round} results={results} roundSideBets={roundSideBets} />
+
+      {/* Lock In Round button (only if round is complete) */}
+      {(roundComplete || isLocked) && (
+        <button
+          onClick={toggleLock}
+          style={{
+            width: '100%',
+            marginTop: '14px',
+            padding: '14px',
+            background: isLocked ? 'rgba(244, 234, 213, 0.08)' : 'rgba(212, 165, 116, 0.18)',
+            border: `2px solid ${isLocked ? 'rgba(212, 165, 116, 0.5)' : '#d4a574'}`,
+            color: '#d4a574',
+            borderRadius: '2px',
+            fontSize: '11px',
+            letterSpacing: '3px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+          }}
+        >
+          {isLocked ? <><Unlock size={15} /> UNLOCK ROUND</> : <><Lock size={15} /> LOCK IN ROUND</>}
+        </button>
+      )}
     </div>
   );
 }
@@ -1235,8 +1453,18 @@ function PlayerAvatar({ player, size = 24, showBorder = false }) {
 }
 
 // Shame display: sticker + speech bubble for snake holders
-function ShameSticker({ player, avatarSize = 90 }) {
-  const quote = PLAYER_QUOTES[player];
+function ShameSticker({ player, avatarSize = 90, seed = '' }) {
+  const quotes = PLAYER_QUOTES[player] || [];
+  // Stable pseudo-random pick: seed combines player name + seed (e.g., round id or hour)
+  // so it doesn't flicker on every render but varies by context
+  let hash = 0;
+  const str = `${player}-${seed}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % (quotes.length || 1);
+  const quote = quotes[idx] || null;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', maxWidth: '160px' }}>
       {/* Speech bubble above avatar */}
@@ -2262,7 +2490,7 @@ function RoundSummary({ round, results, roundSideBets }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '14px', marginBottom: '12px', flexWrap: 'wrap' }}>
               {results.snakePayment.pendingHolders.map((p) => (
-                <ShameSticker key={p} player={p} avatarSize={90} />
+                <ShameSticker key={p} player={p} avatarSize={90} seed={`${round.id}-${results.snakePayment.totalSnakes}`} />
               ))}
             </div>
             <div style={{ fontSize: '10px', opacity: 0.7, letterSpacing: '1px', fontStyle: 'italic' }}>
@@ -2310,7 +2538,7 @@ function RoundSummary({ round, results, roundSideBets }) {
             {/* Big sticker faces with quotes */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '14px', marginBottom: '12px', flexWrap: 'wrap' }}>
               {results.snakePayment.losers.map((p) => (
-                <ShameSticker key={p} player={p} avatarSize={90} />
+                <ShameSticker key={p} player={p} avatarSize={90} seed={`${round.id}-final`} />
               ))}
             </div>
 
