@@ -1388,9 +1388,6 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, save
         <Grid3x3 size={13} /> VIEW FULL SCORECARD
       </button>
 
-      {/* Awards: Larson VIP / Rolph Book */}
-      <AwardsBanner round={round} scores={scores} snakes={snakes} ctp={ctp} />
-
       <HoleStrip round={round} currentHole={currentHole} setCurrentHole={setCurrentHole} roundScores={roundScores} />
 
       <HoleCard
@@ -1481,6 +1478,9 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, save
       </div>
 
       <RoundSummary round={round} results={results} roundSideBets={roundSideBets} />
+
+      {/* Awards moved here — below score entry to keep inputs stable */}
+      <AwardsBanner round={round} scores={scores} snakes={snakes} ctp={ctp} />
 
       {/* Lock In Round button (only if round is complete) */}
       {(roundComplete || isLocked) && (
