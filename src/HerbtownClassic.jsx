@@ -100,6 +100,7 @@ const PLAYER_QUOTES = {
 };
 const SNAKE_VALUE = 3;
 const MATCH_POINT_VALUE = 4;
+const CTP_VALUE = 3; // $3 per hole per player on Cliffhangers
 
 // Stroke play payouts per round (net to each place)
 // 1st: +$70 ($40 from 3rd + $30 from 2nd)
@@ -1013,6 +1014,7 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
       totals[p].stroke += r.strokePayouts[p] || 0;
       totals[p].match += r.matchPayouts[p] || 0;
       totals[p].snake += r.snakePayouts[p] || 0;
+      totals[p].snake += r.ctpPayouts?.[p] || 0; // CTP rolls into snake bucket (mutually exclusive per round)
       totals[p].matchPoints += r.matchPoints[p] || 0;
     });
 
@@ -1035,6 +1037,17 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
           });
         });
       }
+    }
+    // CTP debts: each CTP win = $3 from each of the other two players
+    if (r.ctpPayouts) {
+      PLAYERS.forEach((winner) => {
+        const wins = r.ctpCounts[winner] || 0;
+        if (wins === 0) return;
+        PLAYERS.forEach((loser) => {
+          if (loser === winner) return;
+          debts[loser][winner] += wins * CTP_VALUE;
+        });
+      });
     }
   });
 
@@ -2591,13 +2604,14 @@ function RoundSummary({ round, results, roundSideBets }) {
     });
   }
 
-  // Running round $ total per player (stroke + match + snake + side)
+  // Running round $ total per player (stroke + match + snake + ctp + side)
   const runningTotals = {};
   PLAYERS.forEach((p) => {
     runningTotals[p] = Math.round(
       (results.strokePayouts[p] || 0) +
       (results.matchPayouts[p] || 0) +
       (results.snakePayouts[p] || 0) +
+      (results.ctpPayouts?.[p] || 0) +
       (sideBetTotals[p] || 0)
     );
   });
@@ -2629,14 +2643,14 @@ function RoundSummary({ round, results, roundSideBets }) {
           <div>PLAYER</div>
           <div style={{ textAlign: 'center' }}>STROKE</div>
           <div style={{ textAlign: 'center' }}>MATCH</div>
-          <div style={{ textAlign: 'center' }}>🐍</div>
+          <div style={{ textAlign: 'center' }}>{round.type === 'cliffhangers' ? '⛳' : '🐍'}</div>
           <div style={{ textAlign: 'center' }}>⚡</div>
           <div style={{ textAlign: 'right' }}>ROUND</div>
         </div>
         {PLAYERS.map((p) => {
           const stroke = Math.round(results.strokePayouts[p] || 0);
           const match = Math.round(results.matchPayouts[p] || 0);
-          const snake = Math.round(results.snakePayouts[p] || 0);
+          const pool = Math.round((results.snakePayouts[p] || 0) + (results.ctpPayouts?.[p] || 0));
           const side = Math.round(sideBetTotals[p] || 0);
           const total = runningTotals[p];
           return (
@@ -2655,8 +2669,8 @@ function RoundSummary({ round, results, roundSideBets }) {
               <span style={{ textAlign: 'center', color: match >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
                 {match >= 0 ? '+' : ''}{match}
               </span>
-              <span style={{ textAlign: 'center', color: snake >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
-                {snake >= 0 ? '+' : ''}{snake}
+              <span style={{ textAlign: 'center', color: pool >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
+                {pool >= 0 ? '+' : ''}{pool}
               </span>
               <span style={{ textAlign: 'center', color: side >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
                 {side >= 0 ? '+' : ''}{side}
@@ -2835,13 +2849,24 @@ function RoundSummary({ round, results, roundSideBets }) {
       {/* CTP */}
       {round.type === 'cliffhangers' && (
         <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px dashed rgba(212, 165, 116, 0.2)' }}>
-          <div style={{ fontSize: '10px', opacity: 0.55, letterSpacing: '2px', marginBottom: '6px' }}>CLOSEST TO PIN</div>
-          {PLAYERS.map((p) => (
-            <div key={p} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '12px' }}>
-              <span style={{ fontFamily: '"Special Elite", serif' }}>{p}</span>
-              <span style={{ color: '#d4a574', fontWeight: 600 }}>{results.ctpCounts[p] || 0}</span>
-            </div>
-          ))}
+          <div style={{ fontSize: '10px', opacity: 0.55, letterSpacing: '2px', marginBottom: '6px' }}>
+            CLOSEST TO PIN · ${CTP_VALUE}/hole from each player
+          </div>
+          {PLAYERS.map((p) => {
+            const count = results.ctpCounts[p] || 0;
+            const payout = Math.round(results.ctpPayouts?.[p] || 0);
+            return (
+              <div key={p} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '12px' }}>
+                <span style={{ fontFamily: '"Special Elite", serif' }}>{p}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ opacity: 0.7 }}>{count} CTP</span>
+                  <span style={{ color: payout >= 0 ? '#6b9e4e' : '#c44b4b', fontWeight: 700, minWidth: '40px', textAlign: 'right' }}>
+                    {payout >= 0 ? '+' : ''}${payout}
+                  </span>
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -3218,6 +3243,20 @@ function computeRoundResults(round, scores, snakes, ctp) {
     if (PLAYERS.includes(p)) ctpCounts[p] += 1;
   });
 
+  // CTP payouts: each CTP win = $3 from each of the other 2 players (so +$6 winner, -$3 each loser)
+  const ctpPayouts = { Frosty: 0, Herby: 0, Carlos: 0 };
+  if (round.type === 'cliffhangers') {
+    PLAYERS.forEach((winner) => {
+      const wins = ctpCounts[winner] || 0;
+      if (wins === 0) return;
+      PLAYERS.forEach((loser) => {
+        if (loser === winner) return;
+        ctpPayouts[winner] += wins * CTP_VALUE;
+        ctpPayouts[loser] -= wins * CTP_VALUE;
+      });
+    });
+  }
+
   return {
     grossStrokes,
     netStrokes,
@@ -3229,6 +3268,7 @@ function computeRoundResults(round, scores, snakes, ctp) {
     snakePayment,
     snakePayouts,
     ctpCounts,
+    ctpPayouts,
   };
 }
 
