@@ -79,6 +79,7 @@ const PLAYER_QUOTES = {
     "Carlos fucking said good shot too early.",
     "Nikki calls it my sleep app.",
     "Bro there is no fish on the menu here for me.",
+    "I wear my meta glasses to fuck Nikki to make it more enjoyable.",
   ],
   Frosty: [
     "Where the fuck are the fat girls?",
@@ -489,158 +490,17 @@ export default function HerbtownClassic() {
 // ============= LOGO =============
 function HerbtownLogo() {
   return (
-    <svg width="100%" viewBox="0 0 380 460" role="img" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '320px', display: 'block', margin: '0 auto', filter: 'drop-shadow(0 4px 14px rgba(212, 165, 116, 0.2))' }}>
-      <title>The 3rd Annual Herbtown Classic</title>
-      <desc>Tournament crest logo</desc>
-      <defs>
-        <clipPath id="shield_logo">
-          <path d="M 190 40 L 320 70 L 320 240 Q 320 340 190 400 Q 60 340 60 240 L 60 70 Z"/>
-        </clipPath>
-        <linearGradient id="skyGrad_logo" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#7cb8e0"/>
-          <stop offset="100%" stopColor="#c8e0f0"/>
-        </linearGradient>
-      </defs>
-
-      {/* Outer shield */}
-      <path d="M 190 40 L 320 70 L 320 240 Q 320 340 190 400 Q 60 340 60 240 L 60 70 Z"
-        fill="#0d2818" stroke="#d4a574" strokeWidth="3"/>
-      <path d="M 190 52 L 310 78 L 310 238 Q 310 332 190 388 Q 70 332 70 238 L 70 78 Z"
-        fill="none" stroke="#d4a574" strokeWidth="1" opacity="0.6"/>
-
-      {/* Sky + landscape */}
-      <g clipPath="url(#shield_logo)">
-        <rect x="60" y="40" width="260" height="240" fill="url(#skyGrad_logo)"/>
-        <path d="M 60 230 Q 100 210 140 215 Q 180 222 220 215 Q 260 208 320 220 L 320 260 L 60 260 Z" fill="#e8d4a8"/>
-        <path d="M 60 245 Q 110 225 160 230 Q 220 238 280 228 Q 310 225 320 230 L 320 265 L 60 265 Z" fill="#d4b88a" opacity="0.7"/>
-        <path d="M 60 250 Q 140 240 220 248 Q 280 254 320 248 L 320 310 L 60 310 Z" fill="#6ba84e"/>
-        <path d="M 60 265 Q 150 258 250 262 Q 300 266 320 260 L 320 310 L 60 310 Z" fill="#5a9840" opacity="0.8"/>
-        <line x1="270" y1="218" x2="270" y2="238" stroke="#3a2510" strokeWidth="1.2"/>
-        <path d="M 270 218 L 280 221 L 270 224 Z" fill="#c44b4b"/>
-        <ellipse cx="110" cy="95" rx="18" ry="4" fill="#f4ead5" opacity="0.7"/>
-        <ellipse cx="250" cy="110" rx="22" ry="5" fill="#f4ead5" opacity="0.6"/>
-      </g>
-
-      {/* Top banner */}
-      <path d="M 40 95 Q 190 60 340 95 L 340 130 Q 190 95 40 130 Z" fill="#c44b4b" stroke="#8a2a2a" strokeWidth="1.5"/>
-      <path d="M 40 95 L 30 110 L 40 130 Z" fill="#8a2a2a"/>
-      <path d="M 340 95 L 350 110 L 340 130 Z" fill="#8a2a2a"/>
-      <text x="190" y="117" textAnchor="middle" fontFamily="Georgia, serif" fontSize="15" fontWeight="700" fill="#f4ead5" letterSpacing="3">THE 3RD ANNUAL</text>
-
-      {/* Stars */}
-      <path d="M 60 108 L 62 112 L 66 113 L 63 116 L 64 120 L 60 118 L 56 120 L 57 116 L 54 113 L 58 112 Z" fill="#d4a574"/>
-      <path d="M 320 108 L 322 112 L 326 113 L 323 116 L 324 120 L 320 118 L 316 120 L 317 116 L 314 113 L 318 112 Z" fill="#d4a574"/>
-
-      {/* Golfer legs */}
-      <path d="M 185 265 L 182 305 L 188 340 L 200 340 L 198 305 L 200 265 Z" fill="#f0f0f0" stroke="#2a2a2a" strokeWidth="1.5"/>
-      <path d="M 165 265 L 160 305 L 165 340 L 180 340 L 183 305 L 185 265 Z" fill="#f4f4f4" stroke="#2a2a2a" strokeWidth="1.5"/>
-      <line x1="172" y1="270" x2="170" y2="300" stroke="#d8d8d8" strokeWidth="1.5"/>
-      <line x1="192" y1="270" x2="190" y2="300" stroke="#d8d8d8" strokeWidth="1.5"/>
-
-      {/* Socks */}
-      <rect x="160" y="340" width="20" height="18" fill="#1a1a1a" stroke="#0a0a0a" strokeWidth="1"/>
-      <rect x="185" y="340" width="18" height="18" fill="#1a1a1a" stroke="#0a0a0a" strokeWidth="1"/>
-
-      {/* Shoes */}
-      <ellipse cx="170" cy="365" rx="15" ry="6" fill="#f8f8f8" stroke="#1a1a1a" strokeWidth="1.3"/>
-      <ellipse cx="170" cy="362" rx="12" ry="3" fill="#ffffff"/>
-      <line x1="165" y1="364" x2="163" y2="367" stroke="#1a1a1a" strokeWidth="1.5"/>
-      <line x1="169" y1="364" x2="167" y2="367" stroke="#1a1a1a" strokeWidth="1.5"/>
-      <line x1="173" y1="364" x2="171" y2="367" stroke="#1a1a1a" strokeWidth="1.5"/>
-      <line x1="168" y1="361" x2="172" y2="363" stroke="#c8c8c8" strokeWidth="0.8"/>
-      <line x1="167" y1="363" x2="173" y2="361" stroke="#c8c8c8" strokeWidth="0.8"/>
-      <ellipse cx="195" cy="365" rx="14" ry="5.5" fill="#f8f8f8" stroke="#1a1a1a" strokeWidth="1.3"/>
-      <ellipse cx="195" cy="362" rx="11" ry="3" fill="#ffffff"/>
-      <line x1="191" y1="364" x2="189" y2="367" stroke="#1a1a1a" strokeWidth="1.5"/>
-      <line x1="194" y1="364" x2="192" y2="367" stroke="#1a1a1a" strokeWidth="1.5"/>
-      <line x1="197" y1="364" x2="195" y2="367" stroke="#1a1a1a" strokeWidth="1.5"/>
-
-      {/* Polo */}
-      <path d="M 163 220 Q 155 245 165 265 L 205 265 Q 215 245 207 220 Q 200 215 185 213 Q 172 215 163 220 Z" fill="#1e3a5f" stroke="#0a1a2f" strokeWidth="1.5"/>
-      <path d="M 178 217 L 182 225 L 185 220 L 188 225 L 192 217 Q 185 215 178 217 Z" fill="#1e3a5f" stroke="#0a1a2f" strokeWidth="1.2"/>
-      <line x1="185" y1="220" x2="185" y2="235" stroke="#0a1a2f" strokeWidth="1"/>
-      <circle cx="185" cy="225" r="0.8" fill="#f4ead5"/>
-      <circle cx="185" cy="232" r="0.8" fill="#f4ead5"/>
-      <circle cx="197" cy="233" r="2.5" fill="#4a9fc8" opacity="0.9"/>
-
-      {/* Arms */}
-      <path d="M 165 230 Q 155 255 165 285 Q 175 290 185 285 Z" fill="#1e3a5f" stroke="#0a1a2f" strokeWidth="1.5"/>
-      <path d="M 207 230 Q 215 250 200 275 Q 190 285 180 283 Z" fill="#1e3a5f" stroke="#0a1a2f" strokeWidth="1.5"/>
-      <path d="M 160 245 Q 155 248 157 252" fill="none" stroke="#0a1a2f" strokeWidth="1"/>
-      <path d="M 212 245 Q 217 248 215 252" fill="none" stroke="#0a1a2f" strokeWidth="1"/>
-
-      {/* Forearms */}
-      <path d="M 165 280 Q 160 290 170 298 L 180 298 Q 185 290 180 282 Z" fill="#d4a890" stroke="#3a2510" strokeWidth="1.2"/>
-      <path d="M 195 278 Q 205 287 198 298 L 190 298 Q 186 290 188 280 Z" fill="#d4a890" stroke="#3a2510" strokeWidth="1.2"/>
-
-      {/* Hands */}
-      <path d="M 168 296 Q 165 303 172 308 Q 178 308 182 303 Q 185 298 180 296 Z" fill="#f8f8f8" stroke="#2a2a2a" strokeWidth="1.2"/>
-      <path d="M 183 298 Q 188 302 193 305 Q 196 307 193 310 Q 186 309 180 305 Z" fill="#d4a890" stroke="#3a2510" strokeWidth="1.2"/>
-
-      {/* Club */}
-      <line x1="188" y1="298" x2="194" y2="288" stroke="#1a1a1a" strokeWidth="4" strokeLinecap="round"/>
-      <line x1="188" y1="300" x2="225" y2="360" stroke="#c8c8c8" strokeWidth="2.2" strokeLinecap="round"/>
-      <line x1="188" y1="300" x2="225" y2="360" stroke="#8a8a8a" strokeWidth="1" strokeLinecap="round" opacity="0.7"/>
-      <ellipse cx="228" cy="362" rx="11" ry="6" fill="#1a1a1a" stroke="#0a0a0a" strokeWidth="1.2" transform="rotate(-15 228 362)"/>
-      <ellipse cx="226" cy="360" rx="6" ry="3" fill="#4a4a4a" transform="rotate(-15 228 362)"/>
-      <circle cx="228" cy="361" r="1" fill="#c44b4b"/>
-
-      {/* Ball + tee */}
-      <ellipse cx="243" cy="363" rx="3.5" ry="3.5" fill="#ffffff" stroke="#1a1a1a" strokeWidth="0.8"/>
-      <circle cx="242" cy="362" r="0.3" fill="#8a8a8a"/>
-      <circle cx="244" cy="363" r="0.3" fill="#8a8a8a"/>
-      <circle cx="243" cy="364" r="0.3" fill="#8a8a8a"/>
-      <path d="M 240 367 L 241 372 L 245 372 L 246 367 Z" fill="#f4ead5" stroke="#3a2510" strokeWidth="0.7"/>
-
-      {/* Head */}
-      <ellipse cx="188" cy="200" rx="19" ry="22" fill="#d4a890" stroke="#3a2510" strokeWidth="1.5"/>
-      <path d="M 172 190 Q 188 195 205 190 Q 205 198 188 200 Q 172 198 172 190 Z" fill="#3a2510" opacity="0.35"/>
-      <path d="M 178 213 Q 188 218 198 213 Q 195 218 188 220 Q 181 218 178 213 Z" fill="#3a2510" opacity="0.15"/>
-
-      {/* Aviators */}
-      <line x1="186" y1="201" x2="190" y2="201" stroke="#c8a858" strokeWidth="1.2" strokeLinecap="round"/>
-      <path d="M 174 199 Q 172 203 174 207 Q 178 210 183 208 Q 186 206 186 202 Q 186 199 184 198 Q 179 197 174 199 Z" fill="#2a3a4a" stroke="#c8a858" strokeWidth="1.3"/>
-      <path d="M 175 200 Q 178 199 181 200 Q 180 202 177 202 Q 175 201 175 200 Z" fill="#7ca8c8" opacity="0.7"/>
-      <ellipse cx="179" cy="204" rx="1.5" ry="0.8" fill="#a8c8e0" opacity="0.5"/>
-      <path d="M 202 199 Q 204 203 202 207 Q 198 210 193 208 Q 190 206 190 202 Q 190 199 192 198 Q 197 197 202 199 Z" fill="#2a3a4a" stroke="#c8a858" strokeWidth="1.3"/>
-      <path d="M 195 200 Q 198 199 201 200 Q 200 202 197 202 Q 195 201 195 200 Z" fill="#7ca8c8" opacity="0.7"/>
-      <ellipse cx="199" cy="204" rx="1.5" ry="0.8" fill="#a8c8e0" opacity="0.5"/>
-      <line x1="174" y1="199" x2="186" y2="199" stroke="#c8a858" strokeWidth="0.8"/>
-      <line x1="190" y1="199" x2="202" y2="199" stroke="#c8a858" strokeWidth="0.8"/>
-
-      {/* Smile */}
-      <path d="M 184 211 Q 188 213 192 211" fill="none" stroke="#3a2510" strokeWidth="1.2" strokeLinecap="round"/>
-      <path d="M 188 205 Q 186 209 188 211" fill="none" stroke="#3a2510" strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
-
-      {/* Neck */}
-      <path d="M 180 218 L 178 228 L 198 228 L 196 218 Z" fill="#d4a890" stroke="#3a2510" strokeWidth="1.2"/>
-
-      {/* Straw fedora with ALO */}
-      <ellipse cx="188" cy="180" rx="34" ry="5.5" fill="#c9a876" stroke="#8a6a3a" strokeWidth="1.5"/>
-      <ellipse cx="188" cy="178" rx="34" ry="4" fill="#d8b888"/>
-      <path d="M 158 180 Q 173 183 188 180 Q 203 183 218 180" fill="none" stroke="#a88858" strokeWidth="0.4" opacity="0.7"/>
-      <path d="M 160 182 Q 175 184 188 181 Q 201 184 216 182" fill="none" stroke="#a88858" strokeWidth="0.4" opacity="0.6"/>
-      <path d="M 170 178 Q 168 165 171 158 Q 178 153 188 152 Q 198 153 205 158 Q 208 165 206 178 Z" fill="#c9a876" stroke="#8a6a3a" strokeWidth="1.5"/>
-      <path d="M 172 161 Q 188 159 204 161" fill="none" stroke="#a88858" strokeWidth="0.4" opacity="0.7"/>
-      <path d="M 171 166 Q 188 164 205 166" fill="none" stroke="#a88858" strokeWidth="0.4" opacity="0.6"/>
-      <ellipse cx="188" cy="174" rx="18" ry="3.2" fill="#1a1a1a" stroke="#0a0a0a" strokeWidth="0.6"/>
-      <text x="188" y="177" textAnchor="middle" fontFamily="Helvetica, Arial, sans-serif" fontSize="6" fontWeight="700" fill="#f4ead5" letterSpacing="1.2">ALO</text>
-      <path d="M 173 185 Q 180 183 185 184 M 192 184 Q 198 183 203 185" fill="none" stroke="#2a1810" strokeWidth="2" strokeLinecap="round"/>
-
-      {/* Watch */}
-      <rect x="172" y="291" width="4" height="3" fill="#e8e8e8" stroke="#1a1a1a" strokeWidth="0.6"/>
-
-      {/* Ground shadow */}
-      <ellipse cx="185" cy="372" rx="40" ry="4" fill="#1a1a1a" opacity="0.2"/>
-
-      {/* Bottom banner */}
-      <path d="M 40 360 Q 190 395 340 360 L 340 405 Q 190 440 40 405 Z" fill="#c44b4b" stroke="#8a2a2a" strokeWidth="1.5"/>
-      <path d="M 40 360 L 30 380 L 40 405 Z" fill="#8a2a2a"/>
-      <path d="M 340 360 L 350 380 L 340 405 Z" fill="#8a2a2a"/>
-      <text x="190" y="390" textAnchor="middle" fontFamily="Georgia, serif" fontSize="22" fontWeight="700" fill="#f4ead5" letterSpacing="2">HERBTOWN</text>
-      <text x="190" y="412" textAnchor="middle" fontFamily="Georgia, serif" fontSize="14" fontWeight="700" fill="#f4ead5" letterSpacing="4">CLASSIC</text>
-      <text x="190" y="442" textAnchor="middle" fontFamily="Georgia, serif" fontSize="11" fontStyle="italic" fill="#d4a574" letterSpacing="2">BIG CEDAR LODGE · MMXXVI</text>
-    </svg>
+    <img
+      src="/herbtown_logo.png"
+      alt="The 3rd Annual Herbtown Classic"
+      style={{
+        width: '100%',
+        maxWidth: '320px',
+        display: 'block',
+        margin: '0 auto',
+        filter: 'drop-shadow(0 4px 14px rgba(212, 165, 116, 0.25))',
+      }}
+    />
   );
 }
 
