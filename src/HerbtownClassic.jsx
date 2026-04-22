@@ -50,6 +50,7 @@ const LARSON_TIERS = [
     minStreak: 4,
     emoji: '🎟️',
     title: 'JOSH LARSON VIP CONCERT TICKETS',
+    streakLabel: 'is en fucking fuego',
     flavorShort: 'Josh Larson VIP concert tickets',
     flavor: "front row, backstage pass, bonus backstage blowie from Will's sure thing",
   },
@@ -57,6 +58,7 @@ const LARSON_TIERS = [
     minStreak: 3,
     emoji: '⛳',
     title: "A ROUND AT LARSON'S FAVORITE COLLEGE COURSE",
+    streakLabel: 'is on fire',
     flavorShort: "a round at Larson's favorite college course",
     flavor: 'tee time Saturday 6:47 AM, get to meet his son, the club golfer',
   },
@@ -64,6 +66,7 @@ const LARSON_TIERS = [
     minStreak: 2,
     emoji: '🇺🇸',
     title: 'A BEAUTIFUL SLIGHTLY USED AMERICAN FLAG TEE',
+    streakLabel: 'is cooking',
     flavorShort: 'a slightly used American flag tee',
     flavor: 'never got a drive past 180, found on hole 18 of Arcadia Bluffs',
   },
@@ -395,7 +398,13 @@ export default function HerbtownClassic() {
   };
 
   const resetAll = async () => {
-    if (!confirm('Reset ALL scores for ALL rounds? This cannot be undone.')) return;
+    const pw = prompt('Enter password to reset ALL scores:');
+    if (pw == null) return; // cancelled
+    if (pw !== '1869') {
+      alert('Wrong password. Reset cancelled.');
+      return;
+    }
+    if (!confirm('Password accepted. Reset ALL scores, snakes, side bets, and locks? This cannot be undone.')) return;
     await saveScores({});
     await saveSnakes({});
     await saveCtp({});
@@ -659,7 +668,7 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
           if (Object.keys(rs).length === 0) continue;
           const completed = getRoundProgress(r, scores);
           if (completed < r.holes) {
-            return <AwardsBanner round={r} scores={scores} />;
+            return <AwardsBanner round={r} scores={scores} snakes={snakes} ctp={ctp} />;
           }
         }
         return null;
@@ -746,6 +755,19 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
           }}
         >
           <Trophy size={14} /> THE LEDGER
+        </button>
+        <button
+          onClick={resetAll}
+          title="Reset all (password required)"
+          style={{
+            padding: '14px 16px',
+            background: 'transparent',
+            border: '1px solid rgba(244, 234, 213, 0.15)',
+            borderRadius: '2px',
+            color: 'rgba(244, 234, 213, 0.35)',
+          }}
+        >
+          <RotateCcw size={14} />
         </button>
       </div>
     </div>
@@ -1335,7 +1357,7 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, save
       </button>
 
       {/* Awards: Larson VIP / Rolph Book */}
-      <AwardsBanner round={round} scores={scores} />
+      <AwardsBanner round={round} scores={scores} snakes={snakes} ctp={ctp} />
 
       <HoleStrip round={round} currentHole={currentHole} setCurrentHole={setCurrentHole} roundScores={roundScores} />
 
@@ -1585,8 +1607,8 @@ function ShameSticker({ player, avatarSize = 90, seed = '' }) {
 
 // ============= AWARDS BANNER =============
 // Shows the Josh Larson VIP Pass and Rolph the Golfin' Dolphin holders for a given round
-function AwardsBanner({ round, scores, compact = false }) {
-  const awards = computeRoundAwards(round, scores);
+function AwardsBanner({ round, scores, snakes, ctp, compact = false }) {
+  const awards = computeRoundAwards(round, scores, snakes, ctp);
   if (!awards.larson && !awards.rolph) return null;
 
   const pad = compact ? '10px' : '12px';
@@ -1619,7 +1641,7 @@ function AwardsBanner({ round, scores, compact = false }) {
                     {tier.emoji} HOT STREAK · {awards.larson.streakLen} IN A ROW
                   </div>
                   <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5', marginBottom: '3px' }}>
-                    {awards.larson.player} is cooking
+                    {awards.larson.player} {tier.streakLabel}
                   </div>
                   <div style={{ fontSize: '10px', opacity: 0.8, fontStyle: 'italic', lineHeight: 1.3 }}>
                     currently holding {tier.flavorShort}
@@ -1660,7 +1682,7 @@ function AwardsBanner({ round, scores, compact = false }) {
                 🐬 COLD STREAK
               </div>
               <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5', marginBottom: '3px' }}>
-                {awards.rolph.player} is struggling
+                {awards.rolph.player} is {awards.rolph.severity === 'severe' ? 'shitting the bed' : 'struggling'}
               </div>
               <div style={{ fontSize: '10px', opacity: 0.8, fontStyle: 'italic', lineHeight: 1.3 }}>
                 currently holding {variant.flavorShort}
@@ -2739,12 +2761,12 @@ function RoundSummary({ round, results, roundSideBets }) {
 // ============= AWARDS =============
 // Compute who currently holds the Larson ticket (hot streak) and the Rolph book (bad run) for a round
 // Larson: 2+ pars (or better) in a row (most recent qualifying streak, gross vs par)
-// Rolph: triple bogey OR 2+ double bogeys in a row (most recent qualifying disaster)
+// Rolph: triple bogey OR 2+ double bogeys in a row OR down 7+ match points (most recent qualifying disaster)
 // If multiple players qualify simultaneously, the one whose qualifying hole is most recent holds
-function computeRoundAwards(round, scores) {
+function computeRoundAwards(round, scores, snakes, ctp) {
   const roundScores = scores[round.id] || {};
   const larsonCandidates = []; // {player, lastHole, streakLen}
-  const rolphCandidates = []; // {player, lastHole, reason}
+  const rolphCandidates = []; // {player, lastHole, reason, severity}
 
   PLAYERS.forEach((p) => {
     let parStreakLen = 0;   // running count of consecutive pars-or-better
@@ -2755,6 +2777,8 @@ function computeRoundAwards(round, scores) {
     let doubleStreakLen = 0; // running count of consecutive double-bogeys (or worse)
     let rolphLastHole = -1;
     let rolphReason = '';
+    let rolphSeverity = 'mild'; // 'mild' = struggling, 'severe' = shitting the bed
+    let tripleCount = 0;
 
     for (let h = 0; h < round.holes; h++) {
       const raw = roundScores[h]?.[p];
@@ -2779,17 +2803,37 @@ function computeRoundAwards(round, scores) {
       }
 
       // Rolph tracking
-      if (diff >= 3) {
-        // triple bogey or worse — instant Rolph
+      if (diff >= 4) {
+        // Quadruple bogey or worse — instant "shitting the bed"
         rolphLastHole = h;
-        rolphReason = `triple+ on hole ${h + 1}`;
-        doubleStreakLen = 0; // reset double streak since this was worse
+        rolphReason = `${diff === 4 ? 'quad' : diff + '-over'} on hole ${h + 1}`;
+        rolphSeverity = 'severe';
+        doubleStreakLen = 0;
+        tripleCount += 1;
+      } else if (diff === 3) {
+        // Triple bogey
+        rolphLastHole = h;
+        rolphReason = `triple on hole ${h + 1}`;
+        tripleCount += 1;
+        // Upgrade severity if 2+ triples this round
+        if (tripleCount >= 2) {
+          rolphSeverity = 'severe';
+          rolphReason = `${tripleCount} triples this round`;
+        } else if (rolphSeverity !== 'severe') {
+          rolphSeverity = 'mild';
+        }
+        doubleStreakLen = 0;
       } else if (diff === 2) {
-        // double bogey
+        // Double bogey
         doubleStreakLen += 1;
-        if (doubleStreakLen >= 2) {
+        if (doubleStreakLen >= 3) {
           rolphLastHole = h;
           rolphReason = `${doubleStreakLen} doubles in a row`;
+          rolphSeverity = 'severe';
+        } else if (doubleStreakLen >= 2) {
+          rolphLastHole = h;
+          rolphReason = `${doubleStreakLen} doubles in a row`;
+          if (rolphSeverity !== 'severe') rolphSeverity = 'mild';
         }
       } else {
         doubleStreakLen = 0;
@@ -2800,9 +2844,53 @@ function computeRoundAwards(round, scores) {
       larsonCandidates.push({ player: p, lastHole: larsonLastHole, streakLen: larsonStreakLenAtTrigger });
     }
     if (rolphLastHole >= 0) {
-      rolphCandidates.push({ player: p, lastHole: rolphLastHole, reason: rolphReason });
+      rolphCandidates.push({ player: p, lastHole: rolphLastHole, reason: rolphReason, severity: rolphSeverity });
     }
   });
+
+  // Match-play Rolph trigger: if a player is down 7+ match points in this round, they qualify too
+  if (round.type === 'standard' && snakes !== undefined && ctp !== undefined) {
+    try {
+      const results = computeRoundResults(round, scores, snakes, ctp);
+      const matchPoints = results.matchPoints || {};
+      // We want net match points: points won minus points given up.
+      // Since matchPayouts is net dollars at $4/pt, matchPayouts / 4 = net points
+      const netPoints = {};
+      PLAYERS.forEach((p) => {
+        netPoints[p] = Math.round((results.matchPayouts[p] || 0) / MATCH_POINT_VALUE);
+      });
+      // Find the last hole with a completed score (for ordering against par-based candidates)
+      let lastScoredHole = -1;
+      for (let h = round.holes - 1; h >= 0; h--) {
+        const hs = roundScores[h] || {};
+        if (PLAYERS.every((pl) => hs[pl] != null && hs[pl] !== '')) {
+          lastScoredHole = h;
+          break;
+        }
+      }
+      PLAYERS.forEach((p) => {
+        const np = netPoints[p];
+        if (np <= -7) {
+          // Already qualifying for par-based Rolph? if so, mark existing severity as severe
+          const existing = rolphCandidates.find((c) => c.player === p);
+          if (existing) {
+            existing.severity = 'severe';
+            existing.reason = `${existing.reason} · down ${Math.abs(np)} in match play`;
+            if (lastScoredHole > existing.lastHole) existing.lastHole = lastScoredHole;
+          } else {
+            rolphCandidates.push({
+              player: p,
+              lastHole: lastScoredHole >= 0 ? lastScoredHole : 0,
+              reason: `down ${Math.abs(np)} points in match play`,
+              severity: 'severe',
+            });
+          }
+        }
+      });
+    } catch (e) {
+      // Silent fallback — don't break the award system if match compute fails
+    }
+  }
 
   // Winner = whoever has the most recent triggering hole (highest lastHole index)
   larsonCandidates.sort((a, b) => b.lastHole - a.lastHole);
