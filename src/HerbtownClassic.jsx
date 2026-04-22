@@ -17,6 +17,29 @@ const db = getDatabase(firebaseApp);
 
 // ============= CONFIG =============
 const PLAYERS = ['Frosty', 'Herby', 'Carlos'];
+
+// Josh Larson prize tiers based on hot-streak length (pars or better in a row)
+const LARSON_TIERS = [
+  {
+    minStreak: 4,
+    emoji: '🎟️',
+    title: 'JOSH LARSON VIP CONCERT TICKETS',
+    flavor: "front row, backstage pass, bonus backstage blowie from Will's sure thing",
+  },
+  {
+    minStreak: 3,
+    emoji: '⛳',
+    title: "A ROUND AT LARSON'S FAVORITE COLLEGE COURSE",
+    flavor: 'tee time Saturday 6:47 AM, get to meet his son, the club golfer',
+  },
+  {
+    minStreak: 2,
+    emoji: '🇺🇸',
+    title: 'A BEAUTIFUL SLIGHTLY USED AMERICAN FLAG TEE',
+    flavor: 'never got a drive past 180, found on hole 18 of Arcadia Bluffs',
+  },
+];
+const getLarsonTier = (streakLen) => LARSON_TIERS.find((t) => streakLen >= t.minStreak) || null;
 const PLAYER_QUOTES = {
   Herby: [
     "Bro, my NY 4 iron goes 220 though.",
@@ -32,6 +55,7 @@ const PLAYER_QUOTES = {
     "Did I tell you about the worms in my balls?",
     "Josh Larson touched me.",
     "Caddy is like a lax bro, I want to fuck him.",
+    "I need Gilston to take me to the ATM after this.",
   ],
   Carlos: [
     "That should have been a fucking gimme.",
@@ -596,6 +620,21 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
 
       {/* Live Tracker */}
       <LiveTracker scores={scores} setRoundIdx={setRoundIdx} setView={setView} />
+
+      {/* Current round awards (only shows if there's an active round) */}
+      {(() => {
+        // Find the active/most-recent round with activity, same logic as LiveTracker
+        for (let i = 0; i < ROUNDS.length; i++) {
+          const r = ROUNDS[i];
+          const rs = scores[r.id] || {};
+          if (Object.keys(rs).length === 0) continue;
+          const completed = getRoundProgress(r, scores);
+          if (completed < r.holes) {
+            return <AwardsBanner round={r} scores={scores} />;
+          }
+        }
+        return null;
+      })()}
 
       {/* Trip Standings */}
       <TripStandings scores={scores} snakes={snakes} ctp={ctp} sideBets={sideBets} />
@@ -1266,6 +1305,9 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, save
         <Grid3x3 size={13} /> VIEW FULL SCORECARD
       </button>
 
+      {/* Awards: Larson VIP / Rolph Book */}
+      <AwardsBanner round={round} scores={scores} />
+
       <HoleStrip round={round} currentHole={currentHole} setCurrentHole={setCurrentHole} roundScores={roundScores} />
 
       <HoleCard
@@ -1508,6 +1550,89 @@ function ShameSticker({ player, avatarSize = 90, seed = '' }) {
         fontSize: '14px',
         letterSpacing: '1px',
       }}>{player}</span>
+    </div>
+  );
+}
+
+// ============= AWARDS BANNER =============
+// Shows the Josh Larson VIP Pass and Rolph the Golfin' Dolphin holders for a given round
+function AwardsBanner({ round, scores, compact = false }) {
+  const awards = computeRoundAwards(round, scores);
+  if (!awards.larson && !awards.rolph) return null;
+
+  const pad = compact ? '10px' : '12px';
+
+  return (
+    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexDirection: 'column' }}>
+      {/* LARSON VIP PASS (hot streak) */}
+      {awards.larson && (
+        <div style={{
+          padding: pad,
+          background: 'rgba(107, 158, 78, 0.1)',
+          border: '1.5px solid #6b9e4e',
+          borderRadius: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}>
+          <img
+            src="/larson.png"
+            alt="Josh Larson"
+            style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.4)' }}
+          />
+          <div style={{ flex: 1 }}>
+            {(() => {
+              const tier = getLarsonTier(awards.larson.streakLen);
+              if (!tier) return null;
+              return (
+                <>
+                  <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#6b9e4e', fontWeight: 700, marginBottom: '2px' }}>
+                    {tier.emoji} {tier.title}
+                  </div>
+                  <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5' }}>
+                    {awards.larson.player} is cooking
+                  </div>
+                  <div style={{ fontSize: '9px', opacity: 0.7, fontStyle: 'italic', marginTop: '2px' }}>
+                    {awards.larson.streakLen} pars-or-better in a row · {tier.flavor}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+          <PlayerAvatar player={awards.larson.player} size={40} />
+        </div>
+      )}
+
+      {/* ROLPH THE GOLFIN' DOLPHIN (bad run) */}
+      {awards.rolph && (
+        <div style={{
+          padding: pad,
+          background: 'rgba(196, 75, 75, 0.08)',
+          border: '1.5px solid rgba(196, 75, 75, 0.6)',
+          borderRadius: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}>
+          <img
+            src="/rolph.png"
+            alt="Rolph the Golfin' Dolphin"
+            style={{ width: '72px', height: '56px', objectFit: 'cover', flexShrink: 0, borderRadius: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.4)' }}
+          />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#c44b4b', fontWeight: 700, marginBottom: '2px' }}>
+              🐬 ROLPH THE GOLFIN' DOLPHIN
+            </div>
+            <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5' }}>
+              {awards.rolph.player} needs bedtime stories
+            </div>
+            <div style={{ fontSize: '9px', opacity: 0.7, fontStyle: 'italic', marginTop: '2px' }}>
+              {awards.rolph.reason} · must read a chapter to the group
+            </div>
+          </div>
+          <PlayerAvatar player={awards.rolph.player} size={40} />
+        </div>
+      )}
     </div>
   );
 }
@@ -2572,6 +2697,84 @@ function RoundSummary({ round, results, roundSideBets }) {
 }
 
 // ============= COMPUTATION =============
+// ============= AWARDS =============
+// Compute who currently holds the Larson ticket (hot streak) and the Rolph book (bad run) for a round
+// Larson: 2+ pars (or better) in a row (most recent qualifying streak, gross vs par)
+// Rolph: triple bogey OR 2+ double bogeys in a row (most recent qualifying disaster)
+// If multiple players qualify simultaneously, the one whose qualifying hole is most recent holds
+function computeRoundAwards(round, scores) {
+  const roundScores = scores[round.id] || {};
+  const larsonCandidates = []; // {player, lastHole, streakLen}
+  const rolphCandidates = []; // {player, lastHole, reason}
+
+  PLAYERS.forEach((p) => {
+    let parStreakLen = 0;   // running count of consecutive pars-or-better
+    let parStreakLastHole = -1;
+    let larsonLastHole = -1;
+    let larsonStreakLenAtTrigger = 0;
+
+    let doubleStreakLen = 0; // running count of consecutive double-bogeys (or worse)
+    let rolphLastHole = -1;
+    let rolphReason = '';
+
+    for (let h = 0; h < round.holes; h++) {
+      const raw = roundScores[h]?.[p];
+      const par = round.pars[h] || 4;
+      const gross = (raw != null && raw !== '') ? parseInt(raw, 10) : null;
+      if (gross == null || isNaN(gross)) {
+        // no score yet — skip without resetting streaks (streak will continue if they score later)
+        continue;
+      }
+      const diff = gross - par;
+
+      // Par tracking: par or better
+      if (diff <= 0) {
+        parStreakLen += 1;
+        parStreakLastHole = h;
+        if (parStreakLen >= 2) {
+          larsonLastHole = h;
+          larsonStreakLenAtTrigger = parStreakLen;
+        }
+      } else {
+        parStreakLen = 0;
+      }
+
+      // Rolph tracking
+      if (diff >= 3) {
+        // triple bogey or worse — instant Rolph
+        rolphLastHole = h;
+        rolphReason = `triple+ on hole ${h + 1}`;
+        doubleStreakLen = 0; // reset double streak since this was worse
+      } else if (diff === 2) {
+        // double bogey
+        doubleStreakLen += 1;
+        if (doubleStreakLen >= 2) {
+          rolphLastHole = h;
+          rolphReason = `${doubleStreakLen} doubles in a row`;
+        }
+      } else {
+        doubleStreakLen = 0;
+      }
+    }
+
+    if (larsonLastHole >= 0) {
+      larsonCandidates.push({ player: p, lastHole: larsonLastHole, streakLen: larsonStreakLenAtTrigger });
+    }
+    if (rolphLastHole >= 0) {
+      rolphCandidates.push({ player: p, lastHole: rolphLastHole, reason: rolphReason });
+    }
+  });
+
+  // Winner = whoever has the most recent triggering hole (highest lastHole index)
+  larsonCandidates.sort((a, b) => b.lastHole - a.lastHole);
+  rolphCandidates.sort((a, b) => b.lastHole - a.lastHole);
+
+  return {
+    larson: larsonCandidates[0] || null,
+    rolph: rolphCandidates[0] || null,
+  };
+}
+
 function computeRoundResults(round, scores, snakes, ctp) {
   const roundScores = scores[round.id] || {};
   const roundSnakes = snakes[round.id] || {};
