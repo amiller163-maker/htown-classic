@@ -16,6 +16,32 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getDatabase(firebaseApp);
 
 // ============= CONFIG =============
+// Rolph the Golfin' Dolphin variants — randomly picked among qualifying flavors
+const ROLPH_VARIANTS = [
+  {
+    image: '/rolph.png',
+    imageStyle: 'circle', // square/circular
+    title: "ROLPH THE GOLFIN' DOLPHIN",
+    flavorShort: "a personal signing with Ol' Greg & Rolph",
+    flavor: "bring your copy of the book · must read a chapter to the group",
+  },
+  {
+    image: '/larson_sad.png',
+    imageStyle: 'circle', // square/circular
+    title: "STILL LOOKING FOR LARSON'S BALL",
+    flavorShort: "Larson's lost ball on hole 18",
+    flavor: "hasn't been seen since 2003 · keep looking, we believe in you",
+  },
+];
+const pickRolphVariant = (seed) => {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = ((h << 5) - h) + seed.charCodeAt(i);
+    h |= 0;
+  }
+  return ROLPH_VARIANTS[Math.abs(h) % ROLPH_VARIANTS.length];
+};
+
 const PLAYERS = ['Frosty', 'Herby', 'Carlos'];
 
 // Josh Larson prize tiers based on hot-streak length (pars or better in a row)
@@ -24,18 +50,21 @@ const LARSON_TIERS = [
     minStreak: 4,
     emoji: '🎟️',
     title: 'JOSH LARSON VIP CONCERT TICKETS',
+    flavorShort: 'Josh Larson VIP concert tickets',
     flavor: "front row, backstage pass, bonus backstage blowie from Will's sure thing",
   },
   {
     minStreak: 3,
     emoji: '⛳',
     title: "A ROUND AT LARSON'S FAVORITE COLLEGE COURSE",
+    flavorShort: "a round at Larson's favorite college course",
     flavor: 'tee time Saturday 6:47 AM, get to meet his son, the club golfer',
   },
   {
     minStreak: 2,
     emoji: '🇺🇸',
     title: 'A BEAUTIFUL SLIGHTLY USED AMERICAN FLAG TEE',
+    flavorShort: 'a slightly used American flag tee',
     flavor: 'never got a drive past 180, found on hole 18 of Arcadia Bluffs',
   },
 ];
@@ -1586,53 +1615,63 @@ function AwardsBanner({ round, scores, compact = false }) {
               if (!tier) return null;
               return (
                 <>
-                  <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#6b9e4e', fontWeight: 700, marginBottom: '2px' }}>
-                    {tier.emoji} {tier.title}
+                  <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#6b9e4e', fontWeight: 700, marginBottom: '3px' }}>
+                    {tier.emoji} HOT STREAK · {awards.larson.streakLen} IN A ROW
                   </div>
-                  <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5' }}>
+                  <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5', marginBottom: '3px' }}>
                     {awards.larson.player} is cooking
                   </div>
-                  <div style={{ fontSize: '9px', opacity: 0.7, fontStyle: 'italic', marginTop: '2px' }}>
-                    {awards.larson.streakLen} pars-or-better in a row · {tier.flavor}
+                  <div style={{ fontSize: '10px', opacity: 0.8, fontStyle: 'italic', lineHeight: 1.3 }}>
+                    currently holding {tier.flavorShort}
+                  </div>
+                  <div style={{ fontSize: '8px', opacity: 0.5, fontStyle: 'italic', marginTop: '2px' }}>
+                    {tier.flavor}
                   </div>
                 </>
               );
             })()}
           </div>
-          <PlayerAvatar player={awards.larson.player} size={40} />
         </div>
       )}
 
-      {/* ROLPH THE GOLFIN' DOLPHIN (bad run) */}
-      {awards.rolph && (
-        <div style={{
-          padding: pad,
-          background: 'rgba(196, 75, 75, 0.08)',
-          border: '1.5px solid rgba(196, 75, 75, 0.6)',
-          borderRadius: '4px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-        }}>
-          <img
-            src="/rolph.png"
-            alt="Rolph the Golfin' Dolphin"
-            style={{ width: '72px', height: '56px', objectFit: 'cover', flexShrink: 0, borderRadius: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.4)' }}
-          />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#c44b4b', fontWeight: 700, marginBottom: '2px' }}>
-              🐬 ROLPH THE GOLFIN' DOLPHIN
-            </div>
-            <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5' }}>
-              {awards.rolph.player} needs bedtime stories
-            </div>
-            <div style={{ fontSize: '9px', opacity: 0.7, fontStyle: 'italic', marginTop: '2px' }}>
-              {awards.rolph.reason} · must read a chapter to the group
+      {/* ROLPH (bad run) — variants picked randomly */}
+      {awards.rolph && (() => {
+        const variant = pickRolphVariant(`${round.id}-${awards.rolph.player}-${awards.rolph.lastHole}`);
+        const imgStyle = variant.imageStyle === 'circle'
+          ? { width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover' }
+          : { width: '72px', height: '56px', objectFit: 'cover', borderRadius: '2px' };
+        return (
+          <div style={{
+            padding: pad,
+            background: 'rgba(196, 75, 75, 0.08)',
+            border: '1.5px solid rgba(196, 75, 75, 0.6)',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
+            <img
+              src={variant.image}
+              alt={variant.title}
+              style={{ ...imgStyle, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.4)' }}
+            />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#c44b4b', fontWeight: 700, marginBottom: '3px' }}>
+                🐬 COLD STREAK
+              </div>
+              <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5', marginBottom: '3px' }}>
+                {awards.rolph.player} is struggling
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.8, fontStyle: 'italic', lineHeight: 1.3 }}>
+                currently holding {variant.flavorShort}
+              </div>
+              <div style={{ fontSize: '8px', opacity: 0.5, fontStyle: 'italic', marginTop: '2px' }}>
+                {awards.rolph.reason} · {variant.flavor}
+              </div>
             </div>
           </div>
-          <PlayerAvatar player={awards.rolph.player} size={40} />
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
