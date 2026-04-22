@@ -80,6 +80,8 @@ const PLAYER_QUOTES = {
     "Nikki calls it my sleep app.",
     "Bro there is no fish on the menu here for me.",
     "I wear my meta glasses to fuck Nikki to make it more enjoyable.",
+    "Is that a tsunami coming?",
+    "Bro get me to the fucking fireplace.",
   ],
   Frosty: [
     "Where the fuck are the fat girls?",
@@ -495,10 +497,10 @@ function HerbtownLogo() {
       alt="The 3rd Annual Herbtown Classic"
       style={{
         width: '100%',
-        maxWidth: '320px',
+        maxWidth: '360px',
         display: 'block',
         margin: '0 auto',
-        filter: 'drop-shadow(0 4px 14px rgba(212, 165, 116, 0.25))',
+        filter: 'drop-shadow(0 6px 16px rgba(0, 0, 0, 0.35))',
       }}
     />
   );
