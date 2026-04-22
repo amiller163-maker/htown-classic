@@ -82,6 +82,8 @@ const PLAYER_QUOTES = {
     "I wear my meta glasses to fuck Nikki to make it more enjoyable.",
     "Is that a tsunami coming?",
     "Bro get me to the fucking fireplace.",
+    "I think you can see Lambeau Field from here.",
+    "Grief told me Streamsong is essentially unplayable because of the gators.",
   ],
   Frosty: [
     "Where the fuck are the fat girls?",
@@ -92,6 +94,7 @@ const PLAYER_QUOTES = {
     "Caddy is like a lax bro, I want to fuck him.",
     "I need Gilston to take me to the ATM after this.",
     "If I am getting fucked it better be by Mapples.",
+    "I'd rather go down on JCO again than take this snake.",
   ],
   Carlos: [
     "That should have been a fucking gimme.",
@@ -100,6 +103,9 @@ const PLAYER_QUOTES = {
     "I suck more dick than Molly Zung.",
     "Pretty sure that was a stadium lie.",
     "Fucking Fielding fucked me so hard.",
+    "Guys I am gonna need more strokes.",
+    "Well you know down south they call them salt water....",
+    "Get me my calf sleeve and blue light glasses because I am getting fucked here.",
   ],
 };
 const SNAKE_VALUE = 3;
