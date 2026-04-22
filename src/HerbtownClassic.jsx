@@ -1609,7 +1609,7 @@ function ShameSticker({ player, avatarSize = 90, seed = '' }) {
 // Shows the Josh Larson VIP Pass and Rolph the Golfin' Dolphin holders for a given round
 function AwardsBanner({ round, scores, snakes, ctp, compact = false }) {
   const awards = computeRoundAwards(round, scores, snakes, ctp);
-  if (!awards.larson && !awards.rolph) return null;
+  if (!awards.larson && !awards.rolph && !awards.dinner) return null;
 
   const pad = compact ? '10px' : '12px';
 
@@ -1694,6 +1694,50 @@ function AwardsBanner({ round, scores, snakes, ctp, compact = false }) {
           </div>
         );
       })()}
+
+      {/* FREE DINNER (Eagle or Ace) — persists through round */}
+      {awards.dinner && (
+        <div style={{
+          padding: pad,
+          background: 'rgba(212, 165, 116, 0.15)',
+          border: '2px solid #d4a574',
+          borderRadius: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}>
+          <div style={{
+            width: '56px',
+            height: '56px',
+            flexShrink: 0,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, #d4a574 0%, #a17a4a 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '28px',
+            boxShadow: '0 2px 8px rgba(212, 165, 116, 0.5)',
+          }}>
+            {awards.dinner.kind === 'ace' ? '🏆' : '🦅'}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#d4a574', fontWeight: 700, marginBottom: '3px' }}>
+              {awards.dinner.kind === 'ace' ? '🏌️ HOLE-IN-ONE' : '🦅 EAGLE'} · FREE DINNER
+            </div>
+            <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5', marginBottom: '3px' }}>
+              {awards.dinner.player} earned a free dinner
+            </div>
+            <div style={{ fontSize: '10px', opacity: 0.8, fontStyle: 'italic', lineHeight: 1.3 }}>
+              {awards.dinner.kind === 'ace'
+                ? `HOLE IN ONE on hole ${awards.dinner.holeNumber} · legend status`
+                : `eagle on hole ${awards.dinner.holeNumber} · whatever they order`}
+            </div>
+            <div style={{ fontSize: '8px', opacity: 0.5, fontStyle: 'italic', marginTop: '2px' }}>
+              drinks included · anywhere at Big Cedar, boys are buying
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2763,59 +2807,84 @@ function RoundSummary({ round, results, roundSideBets }) {
 // Larson: 2+ pars (or better) in a row (most recent qualifying streak, gross vs par)
 // Rolph: triple bogey OR 2+ double bogeys in a row OR down 7+ match points (most recent qualifying disaster)
 // If multiple players qualify simultaneously, the one whose qualifying hole is most recent holds
+// Compute who currently holds the various awards for a round.
+// Larson (hot streak): 2+ pars (or better) in a row — MUST still be alive on most recently scored hole
+// Rolph (cold streak): qualifying bad holes — MUST still be alive (no subsequent recovery)
+// Eagle/Ace (positive dinner award): any hole-in-one or eagle — persists until round ends
+// Match-play Rolph: down 7+ match points — persists (it's an accumulated stat)
 function computeRoundAwards(round, scores, snakes, ctp) {
   const roundScores = scores[round.id] || {};
   const larsonCandidates = []; // {player, lastHole, streakLen}
   const rolphCandidates = []; // {player, lastHole, reason, severity}
+  const dinnerCandidates = []; // {player, lastHole, kind, holeNumber}
 
   PLAYERS.forEach((p) => {
-    let parStreakLen = 0;   // running count of consecutive pars-or-better
-    let parStreakLastHole = -1;
-    let larsonLastHole = -1;
-    let larsonStreakLenAtTrigger = 0;
+    // Find the last hole this player has scored — if their current streak doesn't reach that hole, it's broken
+    let lastScoredHoleForPlayer = -1;
+    for (let h = round.holes - 1; h >= 0; h--) {
+      const raw = roundScores[h]?.[p];
+      if (raw != null && raw !== '' && !isNaN(parseInt(raw, 10))) {
+        lastScoredHoleForPlayer = h;
+        break;
+      }
+    }
 
-    let doubleStreakLen = 0; // running count of consecutive double-bogeys (or worse)
+    let parStreakLen = 0;
+    let parStreakEndHole = -1; // last hole of the current streak
+
+    let doubleStreakLen = 0;
     let rolphLastHole = -1;
     let rolphReason = '';
-    let rolphSeverity = 'mild'; // 'mild' = struggling, 'severe' = shitting the bed
+    let rolphSeverity = 'mild';
     let tripleCount = 0;
+
+    // Dinner (eagle/ace) — any eagle or better sighting persists through the round
+    let dinnerLastHole = -1;
+    let dinnerKind = '';
+    let dinnerHoleNumber = -1;
 
     for (let h = 0; h < round.holes; h++) {
       const raw = roundScores[h]?.[p];
       const par = round.pars[h] || 4;
       const gross = (raw != null && raw !== '') ? parseInt(raw, 10) : null;
-      if (gross == null || isNaN(gross)) {
-        // no score yet — skip without resetting streaks (streak will continue if they score later)
-        continue;
-      }
+      if (gross == null || isNaN(gross)) continue;
       const diff = gross - par;
 
       // Par tracking: par or better
       if (diff <= 0) {
         parStreakLen += 1;
-        parStreakLastHole = h;
-        if (parStreakLen >= 2) {
-          larsonLastHole = h;
-          larsonStreakLenAtTrigger = parStreakLen;
-        }
+        parStreakEndHole = h;
       } else {
+        // Streak broken — reset
         parStreakLen = 0;
+        parStreakEndHole = -1;
+      }
+
+      // Dinner: eagle (2 under), ace (hole-in-one = always 1)
+      if (gross === 1) {
+        dinnerLastHole = h;
+        dinnerKind = 'ace';
+        dinnerHoleNumber = h + 1;
+      } else if (diff <= -2) {
+        // Keep the most recent/best — but ace always beats eagle
+        if (dinnerKind !== 'ace') {
+          dinnerLastHole = h;
+          dinnerKind = 'eagle';
+          dinnerHoleNumber = h + 1;
+        }
       }
 
       // Rolph tracking
       if (diff >= 4) {
-        // Quadruple bogey or worse — instant "shitting the bed"
         rolphLastHole = h;
         rolphReason = `${diff === 4 ? 'quad' : diff + '-over'} on hole ${h + 1}`;
         rolphSeverity = 'severe';
         doubleStreakLen = 0;
         tripleCount += 1;
       } else if (diff === 3) {
-        // Triple bogey
         rolphLastHole = h;
         rolphReason = `triple on hole ${h + 1}`;
         tripleCount += 1;
-        // Upgrade severity if 2+ triples this round
         if (tripleCount >= 2) {
           rolphSeverity = 'severe';
           rolphReason = `${tripleCount} triples this round`;
@@ -2824,7 +2893,6 @@ function computeRoundAwards(round, scores, snakes, ctp) {
         }
         doubleStreakLen = 0;
       } else if (diff === 2) {
-        // Double bogey
         doubleStreakLen += 1;
         if (doubleStreakLen >= 3) {
           rolphLastHole = h;
@@ -2836,15 +2904,44 @@ function computeRoundAwards(round, scores, snakes, ctp) {
           if (rolphSeverity !== 'severe') rolphSeverity = 'mild';
         }
       } else {
+        // Par or birdie (or eagle/ace already counted above) — breaks the bad streak
         doubleStreakLen = 0;
       }
     }
 
-    if (larsonLastHole >= 0) {
-      larsonCandidates.push({ player: p, lastHole: larsonLastHole, streakLen: larsonStreakLenAtTrigger });
+    // Larson qualifies only if the current par-streak is ≥2 AND reaches the last scored hole
+    if (parStreakLen >= 2 && parStreakEndHole === lastScoredHoleForPlayer) {
+      larsonCandidates.push({ player: p, lastHole: parStreakEndHole, streakLen: parStreakLen });
     }
+
+    // Rolph (par-based) qualifies only if the last bad-run trigger is the player's most recent scored hole
+    // i.e., they haven't "recovered" with a par or birdie since.
+    // This means: either (a) the last hole was the trigger itself, OR (b) subsequent holes were also ≥bogey
+    // Easiest check: the player's score on lastScoredHoleForPlayer must not be par-or-better
     if (rolphLastHole >= 0) {
-      rolphCandidates.push({ player: p, lastHole: rolphLastHole, reason: rolphReason, severity: rolphSeverity });
+      const lastScore = roundScores[lastScoredHoleForPlayer]?.[p];
+      const lastGross = lastScore != null ? parseInt(lastScore, 10) : null;
+      const lastPar = round.pars[lastScoredHoleForPlayer] || 4;
+      const lastDiff = (lastGross != null && !isNaN(lastGross)) ? (lastGross - lastPar) : null;
+      // Cold streak is still alive if they haven't posted par-or-better since the trigger
+      if (lastDiff != null && lastDiff >= 1) {
+        rolphCandidates.push({
+          player: p,
+          lastHole: lastScoredHoleForPlayer,
+          reason: rolphReason,
+          severity: rolphSeverity,
+        });
+      }
+    }
+
+    // Dinner persists through the round regardless of subsequent play
+    if (dinnerLastHole >= 0) {
+      dinnerCandidates.push({
+        player: p,
+        lastHole: dinnerLastHole,
+        kind: dinnerKind,
+        holeNumber: dinnerHoleNumber,
+      });
     }
   });
 
@@ -2895,10 +2992,12 @@ function computeRoundAwards(round, scores, snakes, ctp) {
   // Winner = whoever has the most recent triggering hole (highest lastHole index)
   larsonCandidates.sort((a, b) => b.lastHole - a.lastHole);
   rolphCandidates.sort((a, b) => b.lastHole - a.lastHole);
+  dinnerCandidates.sort((a, b) => b.lastHole - a.lastHole);
 
   return {
     larson: larsonCandidates[0] || null,
     rolph: rolphCandidates[0] || null,
+    dinner: dinnerCandidates[0] || null,
   };
 }
 
