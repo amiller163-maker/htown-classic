@@ -91,6 +91,7 @@ const PLAYER_QUOTES = {
     "Josh Larson touched me.",
     "Caddy is like a lax bro, I want to fuck him.",
     "I need Gilston to take me to the ATM after this.",
+    "If I am getting fucked it better be by Mapples.",
   ],
   Carlos: [
     "That should have been a fucking gimme.",
