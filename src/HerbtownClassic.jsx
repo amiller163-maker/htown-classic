@@ -23,7 +23,7 @@ const ROLPH_VARIANTS = [
     imageStyle: 'circle', // square/circular
     title: "ROLPH THE GOLFIN' DOLPHIN",
     flavorShort: "a personal signing with Ol' Greg & Rolph",
-    flavor: "bring your copy of the book · must read a chapter to the group",
+    flavor: "bring your copy · must read a chapter to the group AND to Herby's unborn twins",
   },
   {
     image: '/larson_sad.png',
