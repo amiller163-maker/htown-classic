@@ -111,6 +111,7 @@ const PLAYER_QUOTES = {
 const SNAKE_VALUE = 3;
 const MATCH_POINT_VALUE = 4;
 const CTP_VALUE = 3; // $3 per hole per player on Cliffhangers
+const CTP_PAR3_VALUE = 5; // $5 per hole per player on par-3s in standard rounds
 
 // Stroke play payouts per round (net to each place)
 // 1st: +$70 ($40 from 3rd + $30 from 2nd)
@@ -911,17 +912,21 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
         });
       }
     }
-    // CTP debts: each CTP win = $3 from each of the other two players
-    if (r.ctpPayouts) {
-      PLAYERS.forEach((winner) => {
-        const wins = r.ctpCounts[winner] || 0;
-        if (wins === 0) return;
-        PLAYERS.forEach((loser) => {
-          if (loser === winner) return;
-          debts[loser][winner] += wins * CTP_VALUE;
-        });
+    // CTP debts: iterate per-hole, use $3 on cliffhangers or $5 on par-3s of standard rounds
+    const roundCtp = (ctp || {})[round.id] || {};
+    Object.entries(roundCtp).forEach(([holeIdxStr, winner]) => {
+      if (!PLAYERS.includes(winner)) return;
+      const holeIdx = parseInt(holeIdxStr, 10);
+      const par = round.pars[holeIdx] || 4;
+      let value = 0;
+      if (round.type === 'cliffhangers') value = CTP_VALUE;
+      else if (round.type === 'standard' && par === 3) value = CTP_PAR3_VALUE;
+      if (value === 0) return;
+      PLAYERS.forEach((loser) => {
+        if (loser === winner) return;
+        debts[loser][winner] += value;
       });
-    }
+    });
   });
 
   // Side bets: iterate every hole, apply winner-takes-amount to pairwise
@@ -1736,6 +1741,22 @@ function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, roundSid
         <div style={{ textAlign: 'right', fontSize: '10px', letterSpacing: '1.5px', opacity: 0.7 }}>
           <div>PAR <span style={{ color: '#d4a574', fontSize: '14px', fontWeight: 600 }}>{par}</span></div>
           {round.type === 'standard' && <div style={{ marginTop: '3px' }}>HCP IDX {hcpIdx}</div>}
+          {round.type === 'standard' && par === 3 && (
+            <div style={{
+              marginTop: '5px',
+              padding: '2px 6px',
+              background: 'rgba(212, 165, 116, 0.15)',
+              border: '1px solid rgba(212, 165, 116, 0.5)',
+              borderRadius: '2px',
+              display: 'inline-block',
+              fontSize: '9px',
+              color: '#d4a574',
+              letterSpacing: '1px',
+              fontWeight: 600,
+            }}>
+              ⛳ CTP · ${CTP_PAR3_VALUE}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1850,7 +1871,7 @@ function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, roundSid
                     fontSize: '9px',
                   }}
                 >🐍</button>
-                {round.type === 'cliffhangers' && (
+                {(round.type === 'cliffhangers' || par === 3) && (
                   <button
                     onClick={() => setCtpWinner(holeIdx, p)}
                     title="Closest to pin"
@@ -1872,7 +1893,7 @@ function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, roundSid
 
       <div style={{ display: 'flex', gap: '10px', fontSize: '8px', opacity: 0.5, letterSpacing: '1px', borderTop: '1px dashed rgba(212, 165, 116, 0.15)', paddingTop: '8px' }}>
         <span>🐍 = 3-PUTT</span>
-        {round.type === 'cliffhangers' && <span>⛳ = CLOSEST TO PIN</span>}
+        {(round.type === 'cliffhangers' || par === 3) && <span>⛳ = CLOSEST TO PIN</span>}
       </div>
 
       {matchResult && round.type === 'standard' && (
@@ -2305,7 +2326,7 @@ function ScorecardModal({ round, roundScores, roundSnakes, roundCtp, results, on
                             lineHeight: 1,
                           }}>🐍</div>
                         )}
-                        {ctpWinner && round.type === 'cliffhangers' && (
+                        {ctpWinner && (round.type === 'cliffhangers' || round.pars[h] === 3) && (
                           <div style={{
                             position: 'absolute',
                             top: '2px',
@@ -2452,7 +2473,7 @@ function ScorecardModal({ round, roundScores, roundSnakes, roundCtp, results, on
               <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: '1px solid #c44b4b', display: 'inline-block' }}></span> Dbl+
             </span>
             <span>🐍 Snake</span>
-            {round.type === 'cliffhangers' && <span>⛳ CTP</span>}
+            {(round.type === 'cliffhangers' || round.pars.includes(3)) && <span>⛳ CTP</span>}
           </div>
           <div style={{ marginTop: '6px', opacity: 0.55, fontSize: '9px' }}>Tap any cell to jump to that hole</div>
         </div>
@@ -2726,10 +2747,12 @@ function RoundSummary({ round, results, roundSideBets }) {
       </div>
 
       {/* CTP */}
-      {round.type === 'cliffhangers' && (
+      {(round.type === 'cliffhangers' || (round.type === 'standard' && round.pars.includes(3))) && (
         <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px dashed rgba(212, 165, 116, 0.2)' }}>
           <div style={{ fontSize: '10px', opacity: 0.55, letterSpacing: '2px', marginBottom: '6px' }}>
-            CLOSEST TO PIN · ${CTP_VALUE}/hole from each player
+            {round.type === 'cliffhangers'
+              ? `CLOSEST TO PIN · $${CTP_VALUE}/hole from each player`
+              : `CLOSEST TO PIN · PAR 3s · $${CTP_PAR3_VALUE}/hole from each player`}
           </div>
           {PLAYERS.map((p) => {
             const count = results.ctpCounts[p] || 0;
@@ -3122,19 +3145,27 @@ function computeRoundResults(round, scores, snakes, ctp) {
     if (PLAYERS.includes(p)) ctpCounts[p] += 1;
   });
 
-  // CTP payouts: each CTP win = $3 from each of the other 2 players (so +$6 winner, -$3 each loser)
+  // CTP payouts: pay out per hole based on round type
+  // Cliffhangers: $3 per hole from each player
+  // Standard par-3s: $5 per hole from each player
   const ctpPayouts = { Frosty: 0, Herby: 0, Carlos: 0 };
-  if (round.type === 'cliffhangers') {
-    PLAYERS.forEach((winner) => {
-      const wins = ctpCounts[winner] || 0;
-      if (wins === 0) return;
-      PLAYERS.forEach((loser) => {
-        if (loser === winner) return;
-        ctpPayouts[winner] += wins * CTP_VALUE;
-        ctpPayouts[loser] -= wins * CTP_VALUE;
-      });
+  Object.entries(roundCtp).forEach(([holeIdxStr, winner]) => {
+    if (!PLAYERS.includes(winner)) return;
+    const holeIdx = parseInt(holeIdxStr, 10);
+    const par = round.pars[holeIdx] || 4;
+    let value = 0;
+    if (round.type === 'cliffhangers') {
+      value = CTP_VALUE;
+    } else if (round.type === 'standard' && par === 3) {
+      value = CTP_PAR3_VALUE;
+    }
+    if (value === 0) return;
+    PLAYERS.forEach((loser) => {
+      if (loser === winner) return;
+      ctpPayouts[winner] += value;
+      ctpPayouts[loser] -= value;
     });
-  }
+  });
 
   return {
     grossStrokes,
