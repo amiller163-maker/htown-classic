@@ -84,6 +84,7 @@ const PLAYER_QUOTES = {
     "Bro get me to the fucking fireplace.",
     "I think you can see Lambeau Field from here.",
     "Grief told me Streamsong is essentially unplayable because of the gators.",
+    "Would you guys be open to me paying double when bitcoin hits 130k?",
   ],
   Frosty: [
     "Where the fuck are the fat girls?",
