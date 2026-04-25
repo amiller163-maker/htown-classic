@@ -175,8 +175,8 @@ const ROUNDS = [
     day: 'Saturday 7:40AM',
     holes: 18,
     type: 'standard',
-    tees: { Frosty: 'Black/Blue', Herby: 'Black/Blue', Carlos: 'Blue/White' },
-    strokes: { Frosty: 0, Herby: 7, Carlos: 3.5 },
+    tees: { Frosty: 'Black/Blue', Herby: 'Blue/White', Carlos: 'Blue/White' },
+    strokes: { Frosty: 0, Herby: 3.5, Carlos: 3.5 },
     pars: [5, 3, 4, 4, 4, 3, 5, 3, 5, 4, 5, 3, 4, 4, 4, 4, 3, 4],
     handicapIndex: [8, 18, 14, 2, 10, 12, 6, 16, 4, 13, 9, 11, 3, 5, 15, 1, 17, 7],
     forwardTeeHoles: [2, 4, 6, 9, 10, 12, 13, 14, 18],
@@ -192,8 +192,8 @@ const ROUNDS = [
     day: 'Saturday 2:20PM',
     holes: 18,
     type: 'standard',
-    tees: { Frosty: 'Black/Blue', Herby: 'Black/Blue', Carlos: 'Blue/White' },
-    strokes: { Frosty: 0, Herby: 7.5, Carlos: 4 },
+    tees: { Frosty: 'Black/Blue', Herby: 'Blue/White', Carlos: 'Blue/White' },
+    strokes: { Frosty: 0, Herby: 4, Carlos: 4 },
     pars: [5, 4, 4, 3, 4, 4, 3, 5, 3, 4, 3, 4, 4, 5, 4, 4, 3, 5],
     handicapIndex: [5, 1, 9, 17, 7, 13, 11, 3, 15, 12, 18, 4, 8, 2, 14, 10, 16, 6],
     forwardTeeHoles: [2, 4, 5, 7, 8, 12, 13, 14, 16, 18],
@@ -209,8 +209,8 @@ const ROUNDS = [
     day: 'Sunday 8AM',
     holes: 18,
     type: 'standard',
-    tees: { Frosty: 'Blue', Herby: 'Blue', Carlos: 'White' },
-    strokes: { Frosty: 0, Herby: 7, Carlos: 2 },
+    tees: { Frosty: 'Blue', Herby: 'White', Carlos: 'White' },
+    strokes: { Frosty: 0, Herby: 2, Carlos: 2 },
     pars: [4, 3, 4, 5, 3, 4, 4, 5, 4, 3, 4, 4, 5, 4, 4, 3, 4, 5],
     handicapIndex: [3, 7, 17, 11, 9, 13, 15, 5, 1, 16, 12, 18, 2, 10, 4, 14, 8, 6],
     yardages: {
@@ -491,6 +491,7 @@ export default function HerbtownClassic() {
           snakes={snakes}
           ctp={ctp}
           sideBets={sideBets}
+          locks={locks}
           setView={setView}
         />
       )}
@@ -547,7 +548,7 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
       })()}
 
       {/* Trip Standings */}
-      <TripStandings scores={scores} snakes={snakes} ctp={ctp} sideBets={sideBets} />
+      <TripStandings scores={scores} snakes={snakes} ctp={ctp} sideBets={sideBets} locks={locks} />
 
       {/* Rounds — split into upcoming and past (locked) */}
       {(() => {
@@ -806,8 +807,8 @@ function LiveTracker({ scores, setRoundIdx, setView }) {
 }
 
 // ============= TRIP STANDINGS =============
-function TripStandings({ scores, snakes, ctp, sideBets }) {
-  const { totals } = computeTripTotals(scores, snakes, ctp, sideBets);
+function TripStandings({ scores, snakes, ctp, sideBets, locks }) {
+  const { totals, tripComplete } = computeTripTotals(scores, snakes, ctp, sideBets, locks);
   const maxTotal = Math.max(...PLAYERS.map((p) => totals[p].total));
 
   return (
@@ -850,8 +851,10 @@ function TripStandings({ scores, snakes, ctp, sideBets }) {
             <div style={{ textAlign: 'center', fontSize: '11px', color: t.stroke >= 0 ? '#6b9e4e' : '#c44b4b' }}>
               {t.stroke >= 0 ? '+' : ''}{t.stroke}
             </div>
-            <div style={{ textAlign: 'center', fontSize: '11px', color: t.match >= 0 ? '#6b9e4e' : '#c44b4b' }}>
-              {t.match >= 0 ? '+' : ''}{t.match}
+            <div style={{ textAlign: 'center', fontSize: '11px', color: (tripComplete ? t.match : t.matchPoints) >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+              {tripComplete
+                ? `${t.match >= 0 ? '+' : ''}${t.match}`
+                : `${t.matchPoints >= 0 ? '+' : ''}${t.matchPoints}p`}
             </div>
             <div style={{ textAlign: 'center', fontSize: '11px', color: t.snake >= 0 ? '#6b9e4e' : '#c44b4b' }}>
               {t.snake >= 0 ? '+' : ''}{t.snake}
@@ -872,7 +875,8 @@ function TripStandings({ scores, snakes, ctp, sideBets }) {
   );
 }
 
-function computeTripTotals(scores, snakes, ctp, sideBets) {
+function computeTripTotals(scores, snakes, ctp, sideBets, locks) {
+  const tripComplete = ROUNDS.every((r) => !!locks?.[r.id]);
   const totals = {};
   PLAYERS.forEach((p) => { totals[p] = { stroke: 0, match: 0, snake: 0, ctp: 0, side: 0, total: 0, matchPoints: 0 }; });
 
@@ -887,7 +891,8 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
     const r = computeRoundResults(round, scores, snakes, ctp);
     PLAYERS.forEach((p) => {
       totals[p].stroke += r.strokePayouts[p] || 0;
-      totals[p].match += r.matchPayouts[p] || 0;
+      // Match $ only counted in totals once entire trip is complete (locked)
+      if (tripComplete) totals[p].match += r.matchPayouts[p] || 0;
       totals[p].snake += r.snakePayouts[p] || 0;
       totals[p].ctp += r.ctpPayouts?.[p] || 0;
       totals[p].matchPoints += r.matchPoints[p] || 0;
@@ -898,7 +903,8 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
     // Actually easier — use the computed payouts to derive who pays whom pairwise:
     addStrokeDebts(debts, r.strokePayouts);
     // Match play: per-hole we know winners. Aggregated at trip level as net totals per player.
-    addMatchDebts(debts, r.matchDetails);
+    // Only flow into pairwise debts once trip complete (so settlements wait for end-of-trip)
+    if (tripComplete) addMatchDebts(debts, r.matchDetails);
     // Snakes: last holders split the pot owed to non-holders
     if (r.snakePayment.losers && r.snakePayment.losers.length > 0 && r.snakePayment.amount > 0 && !r.snakePayment.wash) {
       const losers = r.snakePayment.losers;
@@ -937,11 +943,23 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
       const bets = roundBets[holeIdx] || [];
       bets.forEach((bet) => {
         if (!bet.winner) return;
-        const loser = bet.winner === bet.player1 ? bet.player2 : bet.player1;
-        if (!PLAYERS.includes(bet.winner) || !PLAYERS.includes(loser)) return;
-        debts[loser][bet.winner] += bet.amount;
-        totals[bet.winner].side += bet.amount;
-        totals[loser].side -= bet.amount;
+        if (!PLAYERS.includes(bet.winner)) return;
+        const betType = bet.type || '1v1';
+        if (betType === 'everyone') {
+          const players = (bet.players || PLAYERS).filter((p) => PLAYERS.includes(p));
+          const losers = players.filter((p) => p !== bet.winner);
+          losers.forEach((loser) => {
+            debts[loser][bet.winner] += bet.amount;
+            totals[loser].side -= bet.amount;
+          });
+          totals[bet.winner].side += bet.amount * losers.length;
+        } else {
+          const loser = bet.winner === bet.player1 ? bet.player2 : bet.player1;
+          if (!PLAYERS.includes(loser)) return;
+          debts[loser][bet.winner] += bet.amount;
+          totals[bet.winner].side += bet.amount;
+          totals[loser].side -= bet.amount;
+        }
       });
     });
   });
@@ -973,7 +991,7 @@ function computeTripTotals(scores, snakes, ctp, sideBets) {
     }
   }
 
-  return { totals, debts, netDebts };
+  return { totals, debts, netDebts, tripComplete };
 }
 
 // Helper: stroke payouts can be derived pairwise
@@ -1917,39 +1935,48 @@ function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, roundSid
       {holeSideBets.length > 0 && (
         <div style={{ marginTop: '10px', padding: '8px', background: 'rgba(180, 120, 200, 0.08)', border: '1px solid rgba(180, 120, 200, 0.4)', borderRadius: '2px' }}>
           <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#c090d0', marginBottom: '6px', textAlign: 'center' }}>⚡ SIDE BETS ⚡</div>
-          {holeSideBets.map((bet) => (
-            <div key={bet.id} style={{ marginBottom: '6px', padding: '6px', background: 'rgba(0,0,0,0.15)', borderRadius: '2px' }}>
-              <div style={{ fontSize: '11px', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>
-                  <span style={{ fontFamily: '"Special Elite", serif' }}>{bet.player1}</span> vs <span style={{ fontFamily: '"Special Elite", serif' }}>{bet.player2}</span>
-                  <span style={{ color: '#d4a574', marginLeft: '6px', fontWeight: 600 }}>${bet.amount}</span>
-                </span>
-                <button onClick={() => removeSideBet(holeIdx, bet.id)} style={{ background: 'transparent', border: 'none', color: 'rgba(196, 75, 75, 0.7)', fontSize: '11px', cursor: 'pointer' }}>✕</button>
+          {holeSideBets.map((bet) => {
+            // Legacy bets default to '1v1' if type is missing
+            const betType = bet.type || '1v1';
+            const players = betType === 'everyone' ? (bet.players || PLAYERS) : [bet.player1, bet.player2];
+            return (
+              <div key={bet.id} style={{ marginBottom: '6px', padding: '6px', background: 'rgba(0,0,0,0.15)', borderRadius: '2px' }}>
+                <div style={{ fontSize: '11px', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                  <span>
+                    {betType === '1v1' ? (
+                      <>
+                        <span style={{ fontFamily: '"Special Elite", serif' }}>{bet.player1}</span> vs <span style={{ fontFamily: '"Special Elite", serif' }}>{bet.player2}</span>
+                      </>
+                    ) : (
+                      <span style={{ fontFamily: '"Special Elite", serif' }}>3-WAY · all in</span>
+                    )}
+                    <span style={{ color: '#d4a574', marginLeft: '6px', fontWeight: 600 }}>${bet.amount}{betType === 'everyone' ? '/ea' : ''}</span>
+                  </span>
+                  <button onClick={() => removeSideBet(holeIdx, bet.id)} style={{ background: 'transparent', border: 'none', color: 'rgba(196, 75, 75, 0.7)', fontSize: '11px', cursor: 'pointer' }}>✕</button>
+                </div>
+                {bet.comment && (
+                  <div style={{ fontSize: '10px', fontStyle: 'italic', opacity: 0.85, marginBottom: '5px', color: '#c090d0' }}>
+                    "{bet.comment}"
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                  {players.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setSideBetWinner(holeIdx, bet.id, p)}
+                      style={{
+                        flex: 1, minWidth: '60px', padding: '5px', fontSize: '10px',
+                        background: bet.winner === p ? '#6b9e4e' : 'transparent',
+                        border: `1px solid ${bet.winner === p ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)'}`,
+                        color: bet.winner === p ? '#0a1f0f' : '#f4ead5',
+                        borderRadius: '2px', letterSpacing: '1px', fontWeight: bet.winner === p ? 700 : 400,
+                      }}
+                    >{p} WON</button>
+                  ))}
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <button
-                  onClick={() => setSideBetWinner(holeIdx, bet.id, bet.player1)}
-                  style={{
-                    flex: 1, padding: '5px', fontSize: '10px',
-                    background: bet.winner === bet.player1 ? '#6b9e4e' : 'transparent',
-                    border: `1px solid ${bet.winner === bet.player1 ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)'}`,
-                    color: bet.winner === bet.player1 ? '#0a1f0f' : '#f4ead5',
-                    borderRadius: '2px', letterSpacing: '1px', fontWeight: bet.winner === bet.player1 ? 700 : 400,
-                  }}
-                >{bet.player1} WON</button>
-                <button
-                  onClick={() => setSideBetWinner(holeIdx, bet.id, bet.player2)}
-                  style={{
-                    flex: 1, padding: '5px', fontSize: '10px',
-                    background: bet.winner === bet.player2 ? '#6b9e4e' : 'transparent',
-                    border: `1px solid ${bet.winner === bet.player2 ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)'}`,
-                    color: bet.winner === bet.player2 ? '#0a1f0f' : '#f4ead5',
-                    borderRadius: '2px', letterSpacing: '1px', fontWeight: bet.winner === bet.player2 ? 700 : 400,
-                  }}
-                >{bet.player2} WON</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -1988,15 +2015,34 @@ function HoleCard({ round, holeIdx, roundScores, roundSnakes, roundCtp, roundSid
 
 // ============= SIDE BET MODAL =============
 function SideBetModal({ holeIdx, onAdd, onClose }) {
+  const [betType, setBetType] = useState('1v1'); // '1v1' or 'everyone'
   const [player1, setPlayer1] = useState(PLAYERS[0]);
   const [player2, setPlayer2] = useState(PLAYERS[1]);
   const [amount, setAmount] = useState('5');
+  const [comment, setComment] = useState('');
 
   const handleAdd = () => {
-    if (player1 === player2) { alert('Pick two different players'); return; }
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) { alert('Enter a valid amount'); return; }
-    onAdd({ player1, player2, amount: amt, winner: null });
+    if (betType === '1v1') {
+      if (player1 === player2) { alert('Pick two different players'); return; }
+      onAdd({
+        type: '1v1',
+        player1, player2,
+        amount: amt,
+        comment: comment.trim() || null,
+        winner: null,
+      });
+    } else {
+      // Everyone in: all 3 players, comment recommended
+      onAdd({
+        type: 'everyone',
+        players: [...PLAYERS],
+        amount: amt,
+        comment: comment.trim() || null,
+        winner: null,
+      });
+    }
   };
 
   return (
@@ -2018,6 +2064,8 @@ function SideBetModal({ holeIdx, onAdd, onClose }) {
           padding: '24px 20px',
           maxWidth: '340px',
           width: '100%',
+          maxHeight: '90vh',
+          overflowY: 'auto',
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -2025,60 +2073,138 @@ function SideBetModal({ holeIdx, onAdd, onClose }) {
           <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '24px', color: '#f4ead5' }}>Double or Nothing</div>
         </div>
 
-        {/* Player 1 */}
-        <div style={{ marginBottom: '14px' }}>
-          <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>PLAYER 1</div>
+        {/* Bet Type Selector */}
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>BET TYPE</div>
           <div style={{ display: 'flex', gap: '4px' }}>
-            {PLAYERS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setPlayer1(p)}
-                style={{
-                  flex: 1, padding: '10px',
-                  background: player1 === p ? '#d4a574' : 'transparent',
-                  border: `1px solid ${player1 === p ? '#d4a574' : 'rgba(212, 165, 116, 0.3)'}`,
-                  color: player1 === p ? '#0a1f0f' : '#f4ead5',
-                  borderRadius: '2px',
-                  fontSize: '12px',
-                  fontFamily: '"Special Elite", serif',
-                  fontWeight: player1 === p ? 700 : 400,
-                }}
-              >{p}</button>
-            ))}
+            <button
+              onClick={() => setBetType('1v1')}
+              style={{
+                flex: 1, padding: '10px',
+                background: betType === '1v1' ? '#c090d0' : 'transparent',
+                border: `1px solid ${betType === '1v1' ? '#c090d0' : 'rgba(192, 144, 208, 0.4)'}`,
+                color: betType === '1v1' ? '#0a1f0f' : '#f4ead5',
+                borderRadius: '2px',
+                fontSize: '11px',
+                letterSpacing: '1px',
+                fontWeight: betType === '1v1' ? 700 : 400,
+              }}
+            >HEAD TO HEAD</button>
+            <button
+              onClick={() => setBetType('everyone')}
+              style={{
+                flex: 1, padding: '10px',
+                background: betType === 'everyone' ? '#c090d0' : 'transparent',
+                border: `1px solid ${betType === 'everyone' ? '#c090d0' : 'rgba(192, 144, 208, 0.4)'}`,
+                color: betType === 'everyone' ? '#0a1f0f' : '#f4ead5',
+                borderRadius: '2px',
+                fontSize: '11px',
+                letterSpacing: '1px',
+                fontWeight: betType === 'everyone' ? 700 : 400,
+              }}
+            >EVERYONE IN</button>
           </div>
         </div>
 
-        {/* VS */}
-        <div style={{ textAlign: 'center', color: '#c090d0', fontSize: '12px', letterSpacing: '2px', marginBottom: '14px' }}>VS</div>
+        {betType === '1v1' ? (
+          <>
+            {/* Player 1 */}
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>PLAYER 1</div>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {PLAYERS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPlayer1(p)}
+                    style={{
+                      flex: 1, padding: '10px',
+                      background: player1 === p ? '#d4a574' : 'transparent',
+                      border: `1px solid ${player1 === p ? '#d4a574' : 'rgba(212, 165, 116, 0.3)'}`,
+                      color: player1 === p ? '#0a1f0f' : '#f4ead5',
+                      borderRadius: '2px',
+                      fontSize: '12px',
+                      fontFamily: '"Special Elite", serif',
+                      fontWeight: player1 === p ? 700 : 400,
+                    }}
+                  >{p}</button>
+                ))}
+              </div>
+            </div>
 
-        {/* Player 2 */}
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>PLAYER 2</div>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {PLAYERS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setPlayer2(p)}
-                style={{
-                  flex: 1, padding: '10px',
-                  background: player2 === p ? '#d4a574' : 'transparent',
-                  border: `1px solid ${player2 === p ? '#d4a574' : 'rgba(212, 165, 116, 0.3)'}`,
-                  color: player2 === p ? '#0a1f0f' : '#f4ead5',
-                  borderRadius: '2px',
-                  fontSize: '12px',
-                  fontFamily: '"Special Elite", serif',
-                  fontWeight: player2 === p ? 700 : 400,
-                  opacity: p === player1 ? 0.3 : 1,
-                }}
-                disabled={p === player1}
-              >{p}</button>
-            ))}
+            <div style={{ textAlign: 'center', color: '#c090d0', fontSize: '12px', letterSpacing: '2px', marginBottom: '14px' }}>VS</div>
+
+            {/* Player 2 */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>PLAYER 2</div>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {PLAYERS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPlayer2(p)}
+                    style={{
+                      flex: 1, padding: '10px',
+                      background: player2 === p ? '#d4a574' : 'transparent',
+                      border: `1px solid ${player2 === p ? '#d4a574' : 'rgba(212, 165, 116, 0.3)'}`,
+                      color: player2 === p ? '#0a1f0f' : '#f4ead5',
+                      borderRadius: '2px',
+                      fontSize: '12px',
+                      fontFamily: '"Special Elite", serif',
+                      fontWeight: player2 === p ? 700 : 400,
+                      opacity: p === player1 ? 0.3 : 1,
+                    }}
+                    disabled={p === player1}
+                  >{p}</button>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div style={{
+            marginBottom: '16px',
+            padding: '12px',
+            background: 'rgba(192, 144, 208, 0.1)',
+            border: '1px solid rgba(192, 144, 208, 0.4)',
+            borderRadius: '2px',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5', marginBottom: '4px' }}>
+              All 3 players
+            </div>
+            <div style={{ fontSize: '10px', opacity: 0.7, lineHeight: 1.4 }}>
+              Each player puts in the amount. Winner takes the pot.<br/>
+              Winner: <span style={{ color: '#6b9e4e' }}>+${amount && !isNaN(parseFloat(amount)) ? parseFloat(amount) * 2 : 0}</span> ·
+              Losers: <span style={{ color: '#c44b4b' }}>−${amount || 0}</span> each
+            </div>
           </div>
+        )}
+
+        {/* Comment */}
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>WHAT'S THE BET? <span style={{ opacity: 0.5 }}>(optional)</span></div>
+          <input
+            type="text"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="closest to pin, longest drive, no 3-putt..."
+            maxLength={80}
+            style={{
+              width: '100%', padding: '10px',
+              background: '#0a1f0f',
+              border: '1px solid rgba(212, 165, 116, 0.4)',
+              color: '#f4ead5',
+              fontSize: '13px',
+              borderRadius: '2px',
+              fontFamily: '"Special Elite", serif',
+              boxSizing: 'border-box',
+            }}
+          />
         </div>
 
         {/* Amount */}
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>AMOUNT ($)</div>
+          <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px' }}>
+            AMOUNT ($){betType === 'everyone' ? ' · per player' : ''}
+          </div>
           <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
             {[5, 10, 20, 50].map((v) => (
               <button
@@ -2110,6 +2236,7 @@ function SideBetModal({ holeIdx, onAdd, onClose }) {
               borderRadius: '2px',
               fontFamily: '"DM Mono", monospace',
               textAlign: 'center',
+              boxSizing: 'border-box',
             }}
           />
         </div>
@@ -2493,19 +2620,30 @@ function RoundSummary({ round, results, roundSideBets }) {
       (betsOnHole || []).forEach((bet) => {
         if (!bet.winner) { settledBetCount.pending += 1; return; }
         settledBetCount.total += 1;
-        const loser = bet.winner === bet.player1 ? bet.player2 : bet.player1;
-        sideBetTotals[bet.winner] = (sideBetTotals[bet.winner] || 0) + bet.amount;
-        sideBetTotals[loser] = (sideBetTotals[loser] || 0) - bet.amount;
+        const betType = bet.type || '1v1';
+        if (betType === 'everyone') {
+          // 3-way: each loser pays bet.amount, winner gets sum from losers
+          const players = bet.players || PLAYERS;
+          const losers = players.filter((p) => p !== bet.winner);
+          sideBetTotals[bet.winner] = (sideBetTotals[bet.winner] || 0) + bet.amount * losers.length;
+          losers.forEach((l) => {
+            sideBetTotals[l] = (sideBetTotals[l] || 0) - bet.amount;
+          });
+        } else {
+          // 1v1: simple winner +amt, loser -amt
+          const loser = bet.winner === bet.player1 ? bet.player2 : bet.player1;
+          sideBetTotals[bet.winner] = (sideBetTotals[bet.winner] || 0) + bet.amount;
+          sideBetTotals[loser] = (sideBetTotals[loser] || 0) - bet.amount;
+        }
       });
     });
   }
 
-  // Running round $ total per player (stroke + match + snake + ctp + side)
+  // Running round $ total per player (stroke + snake + ctp + side; match settles trip-end)
   const runningTotals = {};
   PLAYERS.forEach((p) => {
     runningTotals[p] = Math.round(
       (results.strokePayouts[p] || 0) +
-      (results.matchPayouts[p] || 0) +
       (results.snakePayouts[p] || 0) +
       (results.ctpPayouts?.[p] || 0) +
       (sideBetTotals[p] || 0)
@@ -2546,7 +2684,7 @@ function RoundSummary({ round, results, roundSideBets }) {
         </div>
         {PLAYERS.map((p) => {
           const stroke = Math.round(results.strokePayouts[p] || 0);
-          const match = Math.round(results.matchPayouts[p] || 0);
+          const matchPts = Math.round(results.matchPoints?.[p] || 0);
           const snake = Math.round(results.snakePayouts[p] || 0);
           const ctpVal = Math.round(results.ctpPayouts?.[p] || 0);
           const side = Math.round(sideBetTotals[p] || 0);
@@ -2564,8 +2702,8 @@ function RoundSummary({ round, results, roundSideBets }) {
               <span style={{ textAlign: 'center', color: stroke >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
                 {stroke >= 0 ? '+' : ''}{stroke}
               </span>
-              <span style={{ textAlign: 'center', color: match >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
-                {match >= 0 ? '+' : ''}{match}
+              <span style={{ textAlign: 'center', color: matchPts >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
+                {matchPts >= 0 ? '+' : ''}{matchPts}p
               </span>
               <span style={{ textAlign: 'center', color: snake >= 0 ? '#6b9e4e' : '#c44b4b', fontSize: '11px' }}>
                 {snake >= 0 ? '+' : ''}{snake}
@@ -2631,18 +2769,20 @@ function RoundSummary({ round, results, roundSideBets }) {
       {round.type === 'standard' && (
         <div style={{ marginBottom: '14px', paddingTop: '10px', borderTop: '1px dashed rgba(212, 165, 116, 0.2)' }}>
           <div style={{ fontSize: '10px', opacity: 0.55, letterSpacing: '2px', marginBottom: '6px' }}>
-            MATCH PLAY · ${MATCH_POINT_VALUE}/pt
+            MATCH PLAY · POINTS BANK · ${MATCH_POINT_VALUE}/pt at trip end
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.6fr 0.6fr', gap: '6px', fontSize: '9px', opacity: 0.5, letterSpacing: '1px', marginBottom: '4px' }}>
             <div>PLAYER</div>
             <div style={{ textAlign: 'right' }}>POINTS</div>
-            <div style={{ textAlign: 'right' }}>$ NET</div>
+            <div style={{ textAlign: 'right' }}>$ if trip ended</div>
           </div>
           {PLAYERS.map((p) => (
             <div key={p} style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.6fr 0.6fr', gap: '6px', padding: '4px 0', fontSize: '13px' }}>
               <span style={{ fontFamily: '"Special Elite", serif' }}>{p}</span>
-              <span style={{ textAlign: 'right', color: '#d4a574', fontWeight: 600 }}>{results.matchPoints[p]}</span>
-              <span style={{ textAlign: 'right', fontWeight: 600, color: results.matchPayouts[p] >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+              <span style={{ textAlign: 'right', color: '#d4a574', fontWeight: 600 }}>
+                {results.matchPoints[p] >= 0 ? '+' : ''}{results.matchPoints[p]}
+              </span>
+              <span style={{ textAlign: 'right', fontWeight: 500, opacity: 0.65, color: results.matchPayouts[p] >= 0 ? '#6b9e4e' : '#c44b4b' }}>
                 {results.matchPayouts[p] >= 0 ? '+' : ''}${results.matchPayouts[p]}
               </span>
             </div>
@@ -3184,8 +3324,8 @@ function computeRoundResults(round, scores, snakes, ctp) {
 }
 
 // ============= SUMMARY VIEW =============
-function SummaryView({ scores, snakes, ctp, sideBets, setView }) {
-  const { totals, debts, netDebts } = computeTripTotals(scores, snakes, ctp, sideBets);
+function SummaryView({ scores, snakes, ctp, sideBets, locks, setView }) {
+  const { totals, debts, netDebts, tripComplete } = computeTripTotals(scores, snakes, ctp, sideBets, locks);
   const maxTotal = Math.max(...PLAYERS.map((p) => totals[p].total));
 
   return (
@@ -3251,8 +3391,10 @@ function SummaryView({ scores, snakes, ctp, sideBets, setView }) {
               </div>
               <div style={{ padding: '6px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
                 <div style={{ opacity: 0.5, letterSpacing: '1px', marginBottom: '2px', fontSize: '8px' }}>MATCH</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: t.match >= 0 ? '#6b9e4e' : '#c44b4b' }}>
-                  {t.match >= 0 ? '+' : ''}${t.match}
+                <div style={{ fontSize: '12px', fontWeight: 600, color: (tripComplete ? t.match : t.matchPoints) >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+                  {tripComplete
+                    ? `${t.match >= 0 ? '+' : ''}$${t.match}`
+                    : `${t.matchPoints >= 0 ? '+' : ''}${t.matchPoints}p`}
                 </div>
               </div>
               <div style={{ padding: '6px 4px', background: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
@@ -3303,7 +3445,7 @@ function SummaryView({ scores, snakes, ctp, sideBets, setView }) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', fontSize: '11px' }}>
                 {PLAYERS.map((p) => {
-                  const roundTotal = (results.strokePayouts[p] || 0) + (results.matchPayouts[p] || 0) + (results.snakePayouts[p] || 0) + (results.ctpPayouts?.[p] || 0);
+                  const roundTotal = (results.strokePayouts[p] || 0) + (results.snakePayouts[p] || 0) + (results.ctpPayouts?.[p] || 0) + (tripComplete ? (results.matchPayouts[p] || 0) : 0);
                   return (
                     <div key={p} style={{ textAlign: 'center' }}>
                       <div style={{ opacity: 0.55, fontSize: '10px', marginBottom: '1px' }}>{p}</div>
