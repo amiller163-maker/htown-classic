@@ -344,15 +344,16 @@ export default function HerbtownClassic() {
   const [ctp, setCtp] = useState({});
   const [sideBets, setSideBets] = useState({});
   const [locks, setLocks] = useState({});
+  const [predictions, setPredictions] = useState({});
   const [view, setView] = useState('home');
 
   const loadData = useCallback(() => {
-    // Set up real-time listeners on each path — updates push instantly to all phones
     const scoresRef = ref(db, 'scores');
     const snakesRef = ref(db, 'snakes');
     const ctpRef = ref(db, 'ctp');
     const sideBetsRef = ref(db, 'sideBets');
     const locksRef = ref(db, 'locks');
+    const predictionsRef = ref(db, 'predictions');
 
     const unsubScores = onValue(scoresRef, (snap) => {
       setScores(snap.val() || {});
@@ -365,8 +366,9 @@ export default function HerbtownClassic() {
     const unsubCtp = onValue(ctpRef, (snap) => setCtp(snap.val() || {}));
     const unsubSideBets = onValue(sideBetsRef, (snap) => setSideBets(snap.val() || {}));
     const unsubLocks = onValue(locksRef, (snap) => setLocks(snap.val() || {}));
+    const unsubPredictions = onValue(predictionsRef, (snap) => setPredictions(snap.val() || {}));
 
-    return () => { unsubScores(); unsubSnakes(); unsubCtp(); unsubSideBets(); unsubLocks(); };
+    return () => { unsubScores(); unsubSnakes(); unsubCtp(); unsubSideBets(); unsubLocks(); unsubPredictions(); };
   }, []);
 
   useEffect(() => {
@@ -409,20 +411,28 @@ export default function HerbtownClassic() {
       else await fbSet(ref(db, 'locks'), newLocks);
     } catch (e) { console.error('save locks:', e); }
   };
+  const savePredictions = async (newPredictions) => {
+    setPredictions(newPredictions);
+    try {
+      if (Object.keys(newPredictions).length === 0) await fbRemove(ref(db, 'predictions'));
+      else await fbSet(ref(db, 'predictions'), newPredictions);
+    } catch (e) { console.error('save predictions:', e); }
+  };
 
   const resetAll = async () => {
     const pw = prompt('Enter password to reset ALL scores:');
-    if (pw == null) return; // cancelled
+    if (pw == null) return;
     if (pw !== '1869') {
       alert('Wrong password. Reset cancelled.');
       return;
     }
-    if (!confirm('Password accepted. Reset ALL scores, snakes, side bets, and locks? This cannot be undone.')) return;
+    if (!confirm('Password accepted. Reset ALL scores, snakes, side bets, predictions, and locks? This cannot be undone.')) return;
     await saveScores({});
     await saveSnakes({});
     await saveCtp({});
     await saveSideBets({});
     await saveLocks({});
+    await savePredictions({});
   };
 
   if (loading) {
@@ -464,6 +474,7 @@ export default function HerbtownClassic() {
           ctp={ctp}
           sideBets={sideBets}
           locks={locks}
+          predictions={predictions}
           resetAll={resetAll}
         />
       )}
@@ -476,11 +487,13 @@ export default function HerbtownClassic() {
           ctp={ctp}
           sideBets={sideBets}
           locks={locks}
+          predictions={predictions}
           saveScores={saveScores}
           saveSnakes={saveSnakes}
           saveCtp={saveCtp}
           saveSideBets={saveSideBets}
           saveLocks={saveLocks}
+          savePredictions={savePredictions}
           setView={setView}
           setRoundIdx={setRoundIdx}
         />
@@ -492,6 +505,7 @@ export default function HerbtownClassic() {
           ctp={ctp}
           sideBets={sideBets}
           locks={locks}
+          predictions={predictions}
           setView={setView}
         />
       )}
@@ -517,7 +531,7 @@ function HerbtownLogo() {
 }
 
 // ============= HOME VIEW =============
-function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, resetAll }) {
+function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, predictions, resetAll }) {
   return (
     <div className="fade-in safe-top" style={{ paddingLeft: '18px', paddingRight: '18px', paddingBottom: '100px', maxWidth: '500px', margin: '0 auto' }}>
       {/* Header - Logo */}
@@ -548,7 +562,7 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
       })()}
 
       {/* Trip Standings */}
-      <TripStandings scores={scores} snakes={snakes} ctp={ctp} sideBets={sideBets} locks={locks} />
+      <TripStandings scores={scores} snakes={snakes} ctp={ctp} sideBets={sideBets} locks={locks} predictions={predictions} />
 
       {/* Rounds — split into upcoming and past (locked) */}
       {(() => {
@@ -807,8 +821,8 @@ function LiveTracker({ scores, setRoundIdx, setView }) {
 }
 
 // ============= TRIP STANDINGS =============
-function TripStandings({ scores, snakes, ctp, sideBets, locks }) {
-  const { totals, tripComplete } = computeTripTotals(scores, snakes, ctp, sideBets, locks);
+function TripStandings({ scores, snakes, ctp, sideBets, locks, predictions }) {
+  const { totals, tripComplete } = computeTripTotals(scores, snakes, ctp, sideBets, locks, predictions);
   const maxTotal = Math.max(...PLAYERS.map((p) => totals[p].total));
 
   return (
@@ -875,10 +889,10 @@ function TripStandings({ scores, snakes, ctp, sideBets, locks }) {
   );
 }
 
-function computeTripTotals(scores, snakes, ctp, sideBets, locks) {
+function computeTripTotals(scores, snakes, ctp, sideBets, locks, predictions) {
   const tripComplete = ROUNDS.every((r) => !!locks?.[r.id]);
   const totals = {};
-  PLAYERS.forEach((p) => { totals[p] = { stroke: 0, match: 0, snake: 0, ctp: 0, side: 0, total: 0, matchPoints: 0 }; });
+  PLAYERS.forEach((p) => { totals[p] = { stroke: 0, match: 0, snake: 0, ctp: 0, side: 0, prediction: 0, total: 0, matchPoints: 0 }; });
 
   // Pairwise debts: debts[from][to] = amount from owes to (positive)
   const debts = {};
@@ -934,6 +948,22 @@ function computeTripTotals(scores, snakes, ctp, sideBets, locks) {
         debts[loser][winner] += value;
       });
     });
+
+    // Predictions: settles when round is fully scored. Closest gross wins, $20 from each loser.
+    const pred = computeRoundPrediction(round, scores, predictions);
+    if (pred.settled) {
+      PLAYERS.forEach((p) => {
+        totals[p].prediction += pred.payouts[p] || 0;
+      });
+      // Pairwise: each loser pays $20 split among winners
+      const losers = PLAYERS.filter((p) => !pred.winners.includes(p));
+      const winners = pred.winners;
+      losers.forEach((loser) => {
+        winners.forEach((winner) => {
+          debts[loser][winner] += PREDICTION_VALUE / winners.length;
+        });
+      });
+    }
   });
 
   // Side bets: iterate every hole, apply winner-takes-amount to pairwise
@@ -965,12 +995,13 @@ function computeTripTotals(scores, snakes, ctp, sideBets, locks) {
   });
 
   PLAYERS.forEach((p) => {
-    totals[p].total = totals[p].stroke + totals[p].match + totals[p].snake + totals[p].ctp + totals[p].side;
+    totals[p].total = totals[p].stroke + totals[p].match + totals[p].snake + totals[p].ctp + totals[p].side + totals[p].prediction;
     totals[p].stroke = Math.round(totals[p].stroke);
     totals[p].match = Math.round(totals[p].match);
     totals[p].snake = Math.round(totals[p].snake);
     totals[p].ctp = Math.round(totals[p].ctp);
     totals[p].side = Math.round(totals[p].side);
+    totals[p].prediction = Math.round(totals[p].prediction);
     totals[p].total = Math.round(totals[p].total);
   });
 
@@ -1040,15 +1071,40 @@ function addMatchDebts(debts, matchDetails) {
 }
 
 // ============= ROUND VIEW =============
-function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, saveScores, saveSnakes, saveCtp, saveSideBets, saveLocks, setView, setRoundIdx }) {
+function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, predictions, saveScores, saveSnakes, saveCtp, saveSideBets, saveLocks, savePredictions, setView, setRoundIdx }) {
   const [currentHole, setCurrentHole] = useState(0);
   const [showSideBetModal, setShowSideBetModal] = useState(false);
   const [showScorecard, setShowScorecard] = useState(false);
+  const [showPredictionModal, setShowPredictionModal] = useState(false);
   const roundScores = scores[round.id] || {};
   const roundSnakes = snakes[round.id] || {};
   const roundCtp = ctp[round.id] || {};
   const roundSideBets = sideBets[round.id] || {};
+  const roundPredictions = predictions?.[round.id] || {};
   const isLocked = !!locks?.[round.id];
+
+  // On standard rounds (not Cliffhangers) prompt for predictions when first arriving on hole 1
+  // and predictions haven't been entered yet
+  const allPredicted = PLAYERS.every((p) => roundPredictions[p] != null);
+  useEffect(() => {
+    if (
+      round.type === 'standard' &&
+      !isLocked &&
+      !allPredicted &&
+      currentHole === 0 &&
+      Object.keys(roundScores).length === 0
+    ) {
+      // Show modal automatically after a short delay so the round page renders first
+      const t = setTimeout(() => setShowPredictionModal(true), 400);
+      return () => clearTimeout(t);
+    }
+  }, [round.id, currentHole, allPredicted, isLocked]);
+
+  const submitPredictions = (preds) => {
+    if (isLocked) return;
+    const newPreds = { ...predictions, [round.id]: preds };
+    savePredictions(newPreds);
+  };
 
   // Round is complete when all holes have all 3 player scores
   const roundComplete = (() => {
@@ -1326,6 +1382,15 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, save
         />
       )}
 
+      {showPredictionModal && (
+        <PredictionModal
+          round={round}
+          existing={roundPredictions}
+          onSubmit={(preds) => { submitPredictions(preds); setShowPredictionModal(false); }}
+          onClose={() => setShowPredictionModal(false)}
+        />
+      )}
+
       {showScorecard && (
         <ScorecardModal
           round={round}
@@ -1388,7 +1453,15 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, save
         )}
       </div>
 
-      <RoundSummary round={round} results={results} roundSideBets={roundSideBets} />
+      <RoundSummary
+        round={round}
+        results={results}
+        roundSideBets={roundSideBets}
+        scores={scores}
+        predictions={predictions}
+        onEditPredictions={() => setShowPredictionModal(true)}
+        isLocked={isLocked}
+      />
 
       {/* Awards moved here — below score entry to keep inputs stable */}
       <AwardsBanner round={round} scores={scores} snakes={snakes} ctp={ctp} />
@@ -2274,6 +2347,152 @@ function SideBetModal({ holeIdx, onAdd, onClose }) {
   );
 }
 
+// ============= PREDICTION MODAL =============
+// Hole 1 of every standard round: Herby asks each player to predict their gross score
+// $20 per player; closest-to-actual at the end of the round wins
+function PredictionModal({ round, existing, onSubmit, onClose }) {
+  const [preds, setPreds] = useState(() => ({
+    Frosty: existing?.Frosty != null ? String(existing.Frosty) : '',
+    Herby: existing?.Herby != null ? String(existing.Herby) : '',
+    Carlos: existing?.Carlos != null ? String(existing.Carlos) : '',
+  }));
+
+  // Compute course par as a default suggestion baseline
+  const coursePar = round.pars.reduce((s, p) => s + p, 0);
+
+  const handleSubmit = () => {
+    const out = {};
+    for (const p of PLAYERS) {
+      const v = parseInt(preds[p], 10);
+      if (isNaN(v) || v < 50 || v > 150) {
+        alert(`Enter a valid score for ${p} (50-150)`);
+        return;
+      }
+      out[p] = v;
+    }
+    onSubmit(out);
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.85)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1100, padding: '20px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#0d2818',
+          border: '2px solid #d4a574',
+          borderRadius: '4px',
+          padding: '20px 18px',
+          maxWidth: '360px',
+          width: '100%',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+        }}
+      >
+        {/* Herby photo + speech */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+          <img
+            src="/herby.png"
+            alt="Herby"
+            style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
+          />
+          <div style={{
+            flex: 1,
+            position: 'relative',
+            background: 'rgba(244, 234, 213, 0.92)',
+            color: '#0a1f0f',
+            padding: '10px 12px',
+            borderRadius: '8px',
+            fontFamily: '"Special Elite", serif',
+            fontSize: '14px',
+            lineHeight: 1.3,
+          }}>
+            "What are we shooting today bro?"
+            <div style={{
+              position: 'absolute',
+              left: '-8px',
+              top: '14px',
+              width: 0, height: 0,
+              borderTop: '8px solid transparent',
+              borderBottom: '8px solid transparent',
+              borderRight: '10px solid rgba(244, 234, 213, 0.92)',
+            }}></div>
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', marginBottom: '14px' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#d4a574', marginBottom: '4px' }}>⚡ HOLE 1 PREDICTION ⚡</div>
+          <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '22px', color: '#f4ead5' }}>$20 per player</div>
+          <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px', fontStyle: 'italic' }}>
+            closest gross score guess wins · {round.name} · par {coursePar}
+          </div>
+        </div>
+
+        {/* Per-player input */}
+        {PLAYERS.map((p) => (
+          <div key={p} style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '4px' }}>{p}'S GUESS</div>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={preds[p]}
+              onChange={(e) => setPreds({ ...preds, [p]: e.target.value })}
+              placeholder={String(coursePar + (p === 'Frosty' ? 5 : p === 'Herby' ? 12 : 8))}
+              style={{
+                width: '100%', padding: '10px',
+                background: '#0a1f0f',
+                border: '1px solid rgba(212, 165, 116, 0.4)',
+                color: '#f4ead5',
+                fontSize: '18px',
+                borderRadius: '2px',
+                fontFamily: '"DM Mono", monospace',
+                textAlign: 'center',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        ))}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '12px',
+              background: 'transparent',
+              border: '1px solid rgba(244, 234, 213, 0.3)',
+              color: '#f4ead5',
+              borderRadius: '2px',
+              fontSize: '11px',
+              letterSpacing: '2px',
+            }}
+          >LATER</button>
+          <button
+            onClick={handleSubmit}
+            style={{
+              flex: 1, padding: '12px',
+              background: '#d4a574',
+              border: '1px solid #d4a574',
+              color: '#0a1f0f',
+              borderRadius: '2px',
+              fontSize: '11px',
+              letterSpacing: '2px',
+              fontWeight: 700,
+            }}
+          >LOCK IT IN</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ============= SCORECARD MODAL =============
 function ScorecardModal({ round, roundScores, roundSnakes, roundCtp, results, onJumpToHole, onClose }) {
   // Build per-player running totals; split into Front 9 and Back 9 (for 18-hole rounds)
@@ -2611,7 +2830,9 @@ function ScorecardModal({ round, roundScores, roundSnakes, roundCtp, results, on
 }
 
 // ============= ROUND SUMMARY =============
-function RoundSummary({ round, results, roundSideBets }) {
+function RoundSummary({ round, results, roundSideBets, scores, predictions, onEditPredictions, isLocked }) {
+  // Prediction status (only on standard rounds)
+  const pred = round.type === 'standard' ? computeRoundPrediction(round, scores, predictions) : null;
   // Compute side bet totals per player (only settled bets with a winner count)
   const sideBetTotals = { Frosty: 0, Herby: 0, Carlos: 0 };
   const settledBetCount = { total: 0, pending: 0 };
@@ -2639,14 +2860,15 @@ function RoundSummary({ round, results, roundSideBets }) {
     });
   }
 
-  // Running round $ total per player (stroke + snake + ctp + side; match settles trip-end)
+  // Running round $ total per player (stroke + snake + ctp + side + prediction; match settles trip-end)
   const runningTotals = {};
   PLAYERS.forEach((p) => {
     runningTotals[p] = Math.round(
       (results.strokePayouts[p] || 0) +
       (results.snakePayouts[p] || 0) +
       (results.ctpPayouts?.[p] || 0) +
-      (sideBetTotals[p] || 0)
+      (sideBetTotals[p] || 0) +
+      (pred?.settled ? (pred.payouts[p] || 0) : 0)
     );
   });
 
@@ -2661,6 +2883,98 @@ function RoundSummary({ round, results, roundSideBets }) {
       <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#d4a574', marginBottom: '12px', textAlign: 'center' }}>
         ⟢ ROUND SCORECARD ⟢
       </div>
+
+      {/* Prediction status (standard rounds only) */}
+      {pred && (
+        <div style={{
+          marginBottom: '12px',
+          padding: '10px',
+          background: 'rgba(192, 144, 208, 0.08)',
+          border: '1px solid rgba(192, 144, 208, 0.4)',
+          borderRadius: '2px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img src="/herby.png" alt="Herby" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+              <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#c090d0', fontWeight: 700 }}>
+                ⚡ HERBY'S PREDICTION · $20
+              </div>
+            </div>
+            {!isLocked && (
+              <button
+                onClick={onEditPredictions}
+                style={{
+                  padding: '4px 10px',
+                  background: 'transparent',
+                  border: '1px solid rgba(192, 144, 208, 0.5)',
+                  color: '#c090d0',
+                  borderRadius: '2px',
+                  fontSize: '9px',
+                  letterSpacing: '1px',
+                }}
+              >
+                {pred.allPredicted ? 'EDIT' : 'ENTER'}
+              </button>
+            )}
+          </div>
+          {!pred.allPredicted ? (
+            <div style={{ fontSize: '11px', opacity: 0.7, fontStyle: 'italic', textAlign: 'center', padding: '4px 0' }}>
+              "What are we shooting today bro?" — waiting on guesses
+            </div>
+          ) : (
+            <div>
+              {PLAYERS.map((p) => {
+                const guess = pred.predictions[p];
+                const actual = pred.actuals[p];
+                const diff = pred.diffs[p];
+                const isWinner = pred.settled && pred.winners.includes(p);
+                return (
+                  <div key={p} style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 0.5fr 0.5fr 0.5fr',
+                    gap: '6px',
+                    padding: '4px 0',
+                    fontSize: '12px',
+                    alignItems: 'center',
+                  }}>
+                    <span style={{ fontFamily: '"Special Elite", serif', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {isWinner && <Trophy size={11} style={{ color: '#d4a574' }} />}
+                      {p}
+                    </span>
+                    <span style={{ textAlign: 'center', fontSize: '11px', opacity: 0.85 }}>
+                      <span style={{ opacity: 0.55, fontSize: '9px' }}>guess</span><br/>
+                      <span style={{ color: '#c090d0', fontWeight: 600 }}>{guess}</span>
+                    </span>
+                    <span style={{ textAlign: 'center', fontSize: '11px', opacity: 0.85 }}>
+                      <span style={{ opacity: 0.55, fontSize: '9px' }}>actual</span><br/>
+                      <span style={{ color: '#d4a574', fontWeight: 600 }}>{pred.roundComplete ? actual : '—'}</span>
+                    </span>
+                    <span style={{ textAlign: 'right', fontSize: '11px' }}>
+                      {pred.settled ? (
+                        <>
+                          <span style={{ opacity: 0.55, fontSize: '9px' }}>off by {diff}</span><br/>
+                          <span style={{ fontWeight: 700, color: pred.payouts[p] >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+                            {pred.payouts[p] >= 0 ? '+' : ''}${Math.round(pred.payouts[p])}
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ opacity: 0.4, fontSize: '9px', fontStyle: 'italic' }}>locked in</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+              {pred.settled && (
+                <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '6px', textAlign: 'center', fontStyle: 'italic' }}>
+                  {pred.winners.length === 1
+                    ? `${pred.winners[0]} called it closest · won $${Math.round(pred.payouts[pred.winners[0]])}`
+                    : `Tied · ${pred.winners.join(' & ')} split the pot`}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Round-so-far running totals */}
       <div style={{
@@ -3117,6 +3431,66 @@ function computeRoundAwards(round, scores, snakes, ctp) {
   };
 }
 
+// Predictions: $20 per player, closest gross to actual wins.
+// Only settles when the round is fully scored. Returns {predictions, actuals, diffs, winners, payouts, settled, roundComplete}
+const PREDICTION_VALUE = 20;
+function computeRoundPrediction(round, scores, predictions) {
+  const roundScores = scores[round.id] || {};
+  const preds = (predictions || {})[round.id] || {};
+
+  const result = {
+    predictions: preds,
+    actuals: {},
+    diffs: {},
+    winners: [], // array of player names (could be multiple if tied)
+    payouts: { Frosty: 0, Herby: 0, Carlos: 0 },
+    settled: false,
+    roundComplete: false,
+    allPredicted: PLAYERS.every((p) => preds[p] != null),
+  };
+
+  // Round complete = all 18 holes scored for all 3 players
+  let complete = true;
+  for (let h = 0; h < round.holes; h++) {
+    const hs = roundScores[h] || {};
+    if (!PLAYERS.every((p) => hs[p] != null && hs[p] !== '')) {
+      complete = false;
+      break;
+    }
+  }
+  result.roundComplete = complete;
+
+  if (!complete || !result.allPredicted) return result;
+
+  // Compute gross totals
+  PLAYERS.forEach((p) => {
+    let gross = 0;
+    for (let h = 0; h < round.holes; h++) {
+      const v = roundScores[h]?.[p];
+      const n = parseInt(v, 10);
+      if (!isNaN(n)) gross += n;
+    }
+    result.actuals[p] = gross;
+    result.diffs[p] = Math.abs(gross - preds[p]);
+  });
+
+  // Find minimum diff — winners are everyone tied at it
+  const minDiff = Math.min(...PLAYERS.map((p) => result.diffs[p]));
+  result.winners = PLAYERS.filter((p) => result.diffs[p] === minDiff);
+
+  // Payouts: each loser pays PREDICTION_VALUE; winners split the pot
+  const losers = PLAYERS.filter((p) => !result.winners.includes(p));
+  const pot = losers.length * PREDICTION_VALUE;
+  losers.forEach((l) => { result.payouts[l] = -PREDICTION_VALUE; });
+  if (result.winners.length > 0 && pot > 0) {
+    const perWinner = pot / result.winners.length;
+    result.winners.forEach((w) => { result.payouts[w] = perWinner; });
+  }
+  result.settled = true;
+
+  return result;
+}
+
 function computeRoundResults(round, scores, snakes, ctp) {
   const roundScores = scores[round.id] || {};
   const roundSnakes = snakes[round.id] || {};
@@ -3324,8 +3698,8 @@ function computeRoundResults(round, scores, snakes, ctp) {
 }
 
 // ============= SUMMARY VIEW =============
-function SummaryView({ scores, snakes, ctp, sideBets, locks, setView }) {
-  const { totals, debts, netDebts, tripComplete } = computeTripTotals(scores, snakes, ctp, sideBets, locks);
+function SummaryView({ scores, snakes, ctp, sideBets, locks, predictions, setView }) {
+  const { totals, debts, netDebts, tripComplete } = computeTripTotals(scores, snakes, ctp, sideBets, locks, predictions);
   const maxTotal = Math.max(...PLAYERS.map((p) => totals[p].total));
 
   return (
