@@ -85,6 +85,8 @@ const PLAYER_QUOTES = {
     "I think you can see Lambeau Field from here.",
     "Grief told me Streamsong is essentially unplayable because of the gators.",
     "Would you guys be open to me paying double when bitcoin hits 130k?",
+    "Give that putt 10 seconds next time.",
+    "Carlos stepped in my fucking line.",
   ],
   Frosty: [
     "Where the fuck are the fat girls?",
@@ -208,6 +210,7 @@ const ROUNDS = [
     name: 'Paynes Valley',
     day: 'Sunday 8AM',
     holes: 18,
+    has19thHole: true,
     type: 'standard',
     tees: { Frosty: 'Blue', Herby: 'White', Carlos: 'White' },
     strokes: { Frosty: 0, Herby: 2, Carlos: 2 },
@@ -1357,22 +1360,33 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, pred
 
       <HoleStrip round={round} currentHole={currentHole} setCurrentHole={setCurrentHole} roundScores={roundScores} />
 
-      <HoleCard
-        round={round}
-        holeIdx={currentHole}
-        roundScores={roundScores}
-        roundSnakes={roundSnakes}
-        roundCtp={roundCtp}
-        roundSideBets={roundSideBets}
-        setHoleScore={setHoleScore}
-        toggleSnake={toggleSnake}
-        setCtpWinner={setCtpWinner}
-        clearHole={clearHole}
-        setShowSideBetModal={setShowSideBetModal}
-        setSideBetWinner={setSideBetWinner}
-        removeSideBet={removeSideBet}
-        teams={teams}
-      />
+      {currentHole === round.holes && round.has19thHole ? (
+        <Hole19thCard
+          round={round}
+          holeIdx={currentHole}
+          roundSideBets={roundSideBets}
+          setShowSideBetModal={setShowSideBetModal}
+          setSideBetWinner={setSideBetWinner}
+          removeSideBet={removeSideBet}
+        />
+      ) : (
+        <HoleCard
+          round={round}
+          holeIdx={currentHole}
+          roundScores={roundScores}
+          roundSnakes={roundSnakes}
+          roundCtp={roundCtp}
+          roundSideBets={roundSideBets}
+          setHoleScore={setHoleScore}
+          toggleSnake={toggleSnake}
+          setCtpWinner={setCtpWinner}
+          clearHole={clearHole}
+          setShowSideBetModal={setShowSideBetModal}
+          setSideBetWinner={setSideBetWinner}
+          removeSideBet={removeSideBet}
+          teams={teams}
+        />
+      )}
 
       {showSideBetModal && (
         <SideBetModal
@@ -1420,37 +1434,64 @@ function RoundView({ round, roundIdx, scores, snakes, ctp, sideBets, locks, pred
         >
           <ChevronLeft size={14} /> PREV
         </button>
-        {currentHole === round.holes - 1 && roundComplete && !isLocked ? (
-          <button
-            onClick={toggleLock}
-            style={{
-              flex: 1, padding: '14px',
-              background: '#6b9e4e',
-              border: '2px solid #6b9e4e',
-              color: '#0a1f0f', borderRadius: '2px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-              fontSize: '11px', letterSpacing: '2px', fontWeight: 700,
-            }}
-          >
-            <Lock size={14} /> COMPLETE ROUND
-          </button>
-        ) : (
-          <button
-            onClick={() => currentHole < round.holes - 1 && setCurrentHole(currentHole + 1)}
-            disabled={currentHole === round.holes - 1}
-            style={{
-              flex: 1, padding: '14px',
-              background: '#d4a574',
-              border: '1px solid #d4a574',
-              color: '#0a1f0f', borderRadius: '2px',
-              opacity: currentHole === round.holes - 1 ? 0.3 : 1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-              fontSize: '11px', letterSpacing: '2px', fontWeight: 700,
-            }}
-          >
-            NEXT HOLE <ChevronRight size={14} />
-          </button>
-        )}
+        {(() => {
+          // Determine final navigable hole index (18 or 19 if has19thHole)
+          const lastIdx = round.has19thHole ? round.holes : round.holes - 1;
+          // On hole 18 + round complete + has 19th hole + not yet on 19th → "GO TO 19TH"
+          if (currentHole === round.holes - 1 && roundComplete && round.has19thHole && !isLocked) {
+            return (
+              <button
+                onClick={() => setCurrentHole(round.holes)}
+                style={{
+                  flex: 1, padding: '14px',
+                  background: '#c090d0',
+                  border: '2px solid #c090d0',
+                  color: '#0a1f0f', borderRadius: '2px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  fontSize: '11px', letterSpacing: '2px', fontWeight: 700,
+                }}
+              >
+                19TH HOLE <ChevronRight size={14} />
+              </button>
+            );
+          }
+          // On final hole + round complete + not locked → "COMPLETE ROUND"
+          if (currentHole === lastIdx && roundComplete && !isLocked) {
+            return (
+              <button
+                onClick={toggleLock}
+                style={{
+                  flex: 1, padding: '14px',
+                  background: '#6b9e4e',
+                  border: '2px solid #6b9e4e',
+                  color: '#0a1f0f', borderRadius: '2px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  fontSize: '11px', letterSpacing: '2px', fontWeight: 700,
+                }}
+              >
+                <Lock size={14} /> COMPLETE ROUND
+              </button>
+            );
+          }
+          // Default: NEXT HOLE
+          return (
+            <button
+              onClick={() => currentHole < lastIdx && setCurrentHole(currentHole + 1)}
+              disabled={currentHole === lastIdx}
+              style={{
+                flex: 1, padding: '14px',
+                background: '#d4a574',
+                border: '1px solid #d4a574',
+                color: '#0a1f0f', borderRadius: '2px',
+                opacity: currentHole === lastIdx ? 0.3 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                fontSize: '11px', letterSpacing: '2px', fontWeight: 700,
+              }}
+            >
+              NEXT HOLE <ChevronRight size={14} />
+            </button>
+          );
+        })()}
       </div>
 
       <RoundSummary
@@ -1528,6 +1569,26 @@ function HoleStrip({ round, currentHole, setCurrentHole, roundScores }) {
           </button>
         );
       })}
+      {round.has19thHole && (
+        <button
+          onClick={() => setCurrentHole(round.holes)}
+          title="19th Hole — for Frank"
+          style={{
+            minWidth: '36px',
+            height: '32px',
+            background: currentHole === round.holes ? '#c090d0' : 'transparent',
+            border: `1px solid ${currentHole === round.holes ? '#c090d0' : 'rgba(192, 144, 208, 0.5)'}`,
+            color: currentHole === round.holes ? '#0a1f0f' : '#c090d0',
+            borderRadius: '2px',
+            fontSize: '12px',
+            fontWeight: 700,
+            flexShrink: 0,
+            marginLeft: '4px',
+          }}
+        >
+          19th
+        </button>
+      )}
     </div>
   );
 }
@@ -1768,6 +1829,124 @@ function AwardsBanner({ round, scores, snakes, ctp, compact = false }) {
               drinks included · anywhere at Big Cedar, boys are buying
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============= 19TH HOLE =============
+// Special "after the round" hole — bets only, no scoring, no impact on round totals
+function Hole19thCard({ round, holeIdx, roundSideBets, setShowSideBetModal, setSideBetWinner, removeSideBet }) {
+  const rawBets = roundSideBets[holeIdx];
+  const holeSideBets = Array.isArray(rawBets) ? rawBets : [];
+
+  return (
+    <div style={{
+      background: 'rgba(192, 144, 208, 0.06)',
+      border: '2px solid #c090d0',
+      borderRadius: '4px',
+      padding: '14px 12px',
+      marginBottom: '10px',
+    }}>
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+        <div style={{ fontSize: '9px', letterSpacing: '3px', color: '#c090d0', fontWeight: 700, marginBottom: '4px' }}>
+          ⚡ 19TH HOLE · BET ONLY ⚡
+        </div>
+        <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '32px', color: '#f4ead5', lineHeight: 1 }}>
+          For Frank
+        </div>
+      </div>
+
+      {/* Frank quote */}
+      <div style={{
+        background: 'rgba(244, 234, 213, 0.92)',
+        color: '#0a1f0f',
+        padding: '12px 14px',
+        borderRadius: '6px',
+        fontFamily: '"Special Elite", serif',
+        fontSize: '14px',
+        lineHeight: 1.4,
+        marginBottom: '14px',
+        fontStyle: 'italic',
+        textAlign: 'center',
+      }}>
+        "Frank is thinking about you guys on this one. Do it for him. Do it for 80 year old pussy. Do it for Frank creaming his pants over Carlos's ass."
+      </div>
+
+      {/* Add bet button */}
+      <button
+        onClick={() => setShowSideBetModal(true)}
+        style={{
+          width: '100%',
+          padding: '12px',
+          background: '#c090d0',
+          border: '1px solid #c090d0',
+          color: '#0a1f0f',
+          borderRadius: '2px',
+          fontSize: '12px',
+          letterSpacing: '2px',
+          fontWeight: 700,
+          marginBottom: '12px',
+        }}
+      >
+        ⚡ ADD A BET FOR FRANK
+      </button>
+
+      {/* Side bets on the 19th */}
+      {holeSideBets.length > 0 && (
+        <div style={{ padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(192, 144, 208, 0.3)', borderRadius: '2px' }}>
+          <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#c090d0', marginBottom: '8px', textAlign: 'center' }}>
+            ⚡ FRANK'S BETS ⚡
+          </div>
+          {holeSideBets.map((bet) => {
+            const betType = bet.type || '1v1';
+            const players = betType === 'everyone' ? (bet.players || PLAYERS) : [bet.player1, bet.player2];
+            return (
+              <div key={bet.id} style={{ marginBottom: '6px', padding: '8px', background: 'rgba(0,0,0,0.25)', borderRadius: '2px' }}>
+                <div style={{ fontSize: '12px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                  <span>
+                    {betType === '1v1' ? (
+                      <>
+                        <span style={{ fontFamily: '"Special Elite", serif' }}>{bet.player1}</span> vs <span style={{ fontFamily: '"Special Elite", serif' }}>{bet.player2}</span>
+                      </>
+                    ) : (
+                      <span style={{ fontFamily: '"Special Elite", serif' }}>3-WAY · all in</span>
+                    )}
+                    <span style={{ color: '#d4a574', marginLeft: '6px', fontWeight: 600 }}>${bet.amount}{betType === 'everyone' ? '/ea' : ''}</span>
+                  </span>
+                  <button onClick={() => removeSideBet(holeIdx, bet.id)} style={{ background: 'transparent', border: 'none', color: 'rgba(196, 75, 75, 0.7)', fontSize: '12px', cursor: 'pointer' }}>✕</button>
+                </div>
+                {bet.comment && (
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', opacity: 0.9, marginBottom: '6px', color: '#c090d0' }}>
+                    "{bet.comment}"
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                  {players.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setSideBetWinner(holeIdx, bet.id, p)}
+                      style={{
+                        flex: 1, minWidth: '60px', padding: '6px', fontSize: '10px',
+                        background: bet.winner === p ? '#6b9e4e' : 'transparent',
+                        border: `1px solid ${bet.winner === p ? '#6b9e4e' : 'rgba(212, 165, 116, 0.3)'}`,
+                        color: bet.winner === p ? '#0a1f0f' : '#f4ead5',
+                        borderRadius: '2px', letterSpacing: '1px', fontWeight: bet.winner === p ? 700 : 400,
+                      }}
+                    >{p} WON</button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {holeSideBets.length === 0 && (
+        <div style={{ fontSize: '11px', opacity: 0.55, textAlign: 'center', fontStyle: 'italic', padding: '8px' }}>
+          No bets yet — Frank will be disappointed
         </div>
       )}
     </div>
