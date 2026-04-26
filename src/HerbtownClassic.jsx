@@ -1854,54 +1854,57 @@ function Hole19thCard({ round, holeIdx, roundSideBets, setShowSideBetModal, setS
         <div style={{ fontSize: '9px', letterSpacing: '3px', color: '#c090d0', fontWeight: 700, marginBottom: '4px' }}>
           ⚡ 19TH HOLE · BET ONLY ⚡
         </div>
-        <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '32px', color: '#f4ead5', lineHeight: 1 }}>
+        <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '36px', color: '#f4ead5', lineHeight: 1 }}>
           For Frank
         </div>
       </div>
 
-      {/* Frank photo + quote */}
+      {/* Frank photo + quote — Frank on the right, big and bold */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '14px' }}>
+        <div style={{
+          flex: 1,
+          position: 'relative',
+          background: 'rgba(244, 234, 213, 0.95)',
+          color: '#0a1f0f',
+          padding: '14px 16px',
+          borderRadius: '6px',
+          fontFamily: '"Special Elite", serif',
+          fontSize: '13px',
+          lineHeight: 1.45,
+          fontStyle: 'italic',
+          alignSelf: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        }}>
+          "I'm thinking about you guys on this one. Do it for me fucking some 80 year old pussy. I'm creaming my pants over Carlos's ass in those pants. Now, I need a double bloody mary you fa....."
+          <div style={{
+            position: 'absolute',
+            right: '-9px',
+            top: '50%',
+            marginTop: '-8px',
+            width: 0, height: 0,
+            borderTop: '8px solid transparent',
+            borderBottom: '8px solid transparent',
+            borderLeft: '10px solid rgba(244, 234, 213, 0.95)',
+          }}></div>
+        </div>
         <img
           src="/frank.png"
           alt="Frank"
           style={{
-            height: '130px',
+            height: '210px',
             width: 'auto',
             flexShrink: 0,
-            filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.5))',
+            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.6)) drop-shadow(0 0 20px rgba(192, 144, 208, 0.3))',
           }}
         />
-        <div style={{
-          flex: 1,
-          position: 'relative',
-          background: 'rgba(244, 234, 213, 0.92)',
-          color: '#0a1f0f',
-          padding: '12px 14px',
-          borderRadius: '6px',
-          fontFamily: '"Special Elite", serif',
-          fontSize: '13px',
-          lineHeight: 1.4,
-          fontStyle: 'italic',
-        }}>
-          "Frank is thinking about you guys on this one. Do it for him. Do it for 80 year old pussy. Do it for Frank creaming his pants over Carlos's ass."
-          <div style={{
-            position: 'absolute',
-            left: '-8px',
-            top: '20px',
-            width: 0, height: 0,
-            borderTop: '8px solid transparent',
-            borderBottom: '8px solid transparent',
-            borderRight: '10px solid rgba(244, 234, 213, 0.92)',
-          }}></div>
-        </div>
       </div>
 
-      {/* Add bet button */}
+      {/* Add bet button — tap multiple times for multiple bets */}
       <button
         onClick={() => setShowSideBetModal(true)}
         style={{
           width: '100%',
-          padding: '12px',
+          padding: '14px',
           background: '#c090d0',
           border: '1px solid #c090d0',
           color: '#0a1f0f',
@@ -1912,8 +1915,13 @@ function Hole19thCard({ round, holeIdx, roundSideBets, setShowSideBetModal, setS
           marginBottom: '12px',
         }}
       >
-        ⚡ ADD A BET FOR FRANK
+        ⚡ {holeSideBets.length === 0 ? 'ADD A BET FOR FRANK' : 'ADD ANOTHER BET'}
       </button>
+      {holeSideBets.length > 0 && (
+        <div style={{ fontSize: '9px', opacity: 0.55, textAlign: 'center', letterSpacing: '1px', marginTop: '-6px', marginBottom: '12px', fontStyle: 'italic' }}>
+          {holeSideBets.length} bet{holeSideBets.length !== 1 ? 's' : ''} on the table · stack as many as you want
+        </div>
+      )}
 
       {/* Side bets on the 19th */}
       {holeSideBets.length > 0 && (
