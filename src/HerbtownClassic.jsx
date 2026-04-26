@@ -1859,20 +1859,41 @@ function Hole19thCard({ round, holeIdx, roundSideBets, setShowSideBetModal, setS
         </div>
       </div>
 
-      {/* Frank quote */}
-      <div style={{
-        background: 'rgba(244, 234, 213, 0.92)',
-        color: '#0a1f0f',
-        padding: '12px 14px',
-        borderRadius: '6px',
-        fontFamily: '"Special Elite", serif',
-        fontSize: '14px',
-        lineHeight: 1.4,
-        marginBottom: '14px',
-        fontStyle: 'italic',
-        textAlign: 'center',
-      }}>
-        "Frank is thinking about you guys on this one. Do it for him. Do it for 80 year old pussy. Do it for Frank creaming his pants over Carlos's ass."
+      {/* Frank photo + quote */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '14px' }}>
+        <img
+          src="/frank.png"
+          alt="Frank"
+          style={{
+            height: '130px',
+            width: 'auto',
+            flexShrink: 0,
+            filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.5))',
+          }}
+        />
+        <div style={{
+          flex: 1,
+          position: 'relative',
+          background: 'rgba(244, 234, 213, 0.92)',
+          color: '#0a1f0f',
+          padding: '12px 14px',
+          borderRadius: '6px',
+          fontFamily: '"Special Elite", serif',
+          fontSize: '13px',
+          lineHeight: 1.4,
+          fontStyle: 'italic',
+        }}>
+          "Frank is thinking about you guys on this one. Do it for him. Do it for 80 year old pussy. Do it for Frank creaming his pants over Carlos's ass."
+          <div style={{
+            position: 'absolute',
+            left: '-8px',
+            top: '20px',
+            width: 0, height: 0,
+            borderTop: '8px solid transparent',
+            borderBottom: '8px solid transparent',
+            borderRight: '10px solid rgba(244, 234, 213, 0.92)',
+          }}></div>
+        </div>
       </div>
 
       {/* Add bet button */}
