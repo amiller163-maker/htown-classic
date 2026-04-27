@@ -535,22 +535,91 @@ function HerbtownLogo() {
 
 // ============= HOME VIEW =============
 function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, predictions, resetAll }) {
+  const tripComplete = ROUNDS.every((r) => !!locks?.[r.id]);
+
   return (
     <div className="fade-in safe-top" style={{ paddingLeft: '18px', paddingRight: '18px', paddingBottom: '100px', maxWidth: '500px', margin: '0 auto' }}>
       {/* Header - Logo */}
       <div style={{ textAlign: 'center', marginBottom: '20px', paddingTop: '8px' }}>
         <HerbtownLogo />
         <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '10px', opacity: 0.6 }}>
-          <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#6b9e4e', display: 'inline-block' }}></span>
-          LIVE · SYNCED
+          {tripComplete ? (
+            <>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d4a574', display: 'inline-block' }}></span>
+              LOCKED · ARCHIVED
+            </>
+          ) : (
+            <>
+              <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#6b9e4e', display: 'inline-block' }}></span>
+              LIVE · SYNCED
+            </>
+          )}
         </div>
       </div>
 
-      {/* Live Tracker */}
-      <LiveTracker scores={scores} setRoundIdx={setRoundIdx} setView={setView} />
+      {/* TRIP COMPLETE WRAP-UP — shows when all rounds locked */}
+      {tripComplete && (
+        <div style={{
+          marginBottom: '24px',
+          padding: '20px 16px',
+          background: 'linear-gradient(180deg, rgba(212, 165, 116, 0.18) 0%, rgba(192, 144, 208, 0.10) 100%)',
+          border: '2px solid #d4a574',
+          borderRadius: '4px',
+          textAlign: 'center',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+        }}>
+          <div style={{ fontSize: '10px', letterSpacing: '4px', color: '#d4a574', marginBottom: '8px', fontWeight: 700 }}>
+            ⟢ THAT'S A WRAP ⟢
+          </div>
+          <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '34px', color: '#f4ead5', lineHeight: 1.1, marginBottom: '6px' }}>
+            Until Next Year
+          </div>
+          <div style={{ fontFamily: '"Special Elite", serif', fontSize: '14px', color: '#f4ead5', marginBottom: '16px', fontStyle: 'italic', opacity: 0.9 }}>
+            See you in 2027, gents.
+          </div>
+          <div style={{ fontSize: '10px', opacity: 0.7, lineHeight: 1.5, marginBottom: '14px' }}>
+            6 rounds · 3 courses · 1 gator<br/>
+            All scores locked & archived for posterity
+          </div>
+
+          {/* Next year preview */}
+          <div style={{
+            marginTop: '8px',
+            padding: '14px 10px',
+            background: 'rgba(0, 0, 0, 0.25)',
+            border: '1px dashed rgba(212, 165, 116, 0.4)',
+            borderRadius: '3px',
+          }}>
+            <div style={{ fontSize: '9px', letterSpacing: '3px', color: '#c090d0', marginBottom: '8px', fontWeight: 700 }}>
+              ⚡ COMING NEXT YEAR ⚡
+            </div>
+            <img
+              src="/herbtown_2027_logo.png"
+              alt="The 4th Annual Herbtown Classic — Sand Valley 2027"
+              style={{
+                width: '100%',
+                maxWidth: '280px',
+                display: 'block',
+                margin: '0 auto',
+                filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5))',
+              }}
+            />
+            <div style={{ fontSize: '11px', opacity: 0.85, marginTop: '8px', fontStyle: 'italic', color: '#d4a574' }}>
+              Sand Valley · 2027
+            </div>
+          </div>
+
+          <div style={{ fontSize: '9px', opacity: 0.55, marginTop: '14px', letterSpacing: '1px' }}>
+            All rounds remain viewable below ↓
+          </div>
+        </div>
+      )}
+
+      {/* Live Tracker (only mid-trip) */}
+      {!tripComplete && <LiveTracker scores={scores} setRoundIdx={setRoundIdx} setView={setView} />}
 
       {/* Current round awards (only shows if there's an active round) */}
-      {(() => {
+      {!tripComplete && (() => {
         // Find the active/most-recent round with activity, same logic as LiveTracker
         for (let i = 0; i < ROUNDS.length; i++) {
           const r = ROUNDS[i];
