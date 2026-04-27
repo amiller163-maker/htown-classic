@@ -512,6 +512,7 @@ export default function HerbtownClassic() {
           setView={setView}
         />
       )}
+      {view === 'pastTrips' && <PastTripsView setView={setView} />}
     </div>
   );
 }
@@ -746,6 +747,26 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
           }}
         >
           <Trophy size={14} /> THE LEDGER
+        </button>
+        <button
+          onClick={() => setView('pastTrips')}
+          style={{
+            flex: 1,
+            padding: '14px',
+            background: 'rgba(192, 144, 208, 0.12)',
+            border: '1px solid rgba(192, 144, 208, 0.5)',
+            borderRadius: '2px',
+            color: '#c090d0',
+            fontSize: '11px',
+            letterSpacing: '3px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            fontWeight: 600,
+          }}
+        >
+          ⟢ PAST TRIPS
         </button>
         <button
           onClick={resetAll}
@@ -4207,6 +4228,652 @@ function Settlements({ debts, netDebts }) {
           )}
         </div>
       </details>
+    </div>
+  );
+}
+
+// ============= PAST TRIPS DATA =============
+// Historical trip data — settled, immutable archive of prior years
+const PAST_TRIPS = [
+  {
+    id: '2025_main',
+    year: 2025,
+    annual: '2nd Annual',
+    name: 'Arcadia Bluffs',
+    logo: '/logo_2025_main.png',
+    location: 'Arcadia, MI · w/ American Dunes opener',
+    dateLabel: 'Summer 2025',
+    champion: 'Frosty',
+    championAmount: 585.5,
+    standings: [
+      { player: 'Frosty', total: 585.5, place: 1, gross: 510, net: 510 },
+      { player: 'Herby', total: -235, place: 2, gross: 599, net: 551 },
+      { player: 'Carlos', total: -351.5, place: 3, gross: 597, net: 549 },
+    ],
+    settlements: [
+      { from: 'Carlos', to: 'Frosty', amount: 351 },
+      { from: 'Herby', to: 'Frosty', amount: 235 },
+    ],
+    rules: [
+      '$150 overall stroke winner from each loser',
+      '$4 / split sixes per point',
+      '$50 from each loser net stroke play per round',
+      '$3 snakes per round (OB / Water / 3-putt)',
+      '$30 per loser per CTP',
+      'Rotating match play — $60 if solo wins, $40 if team wins',
+    ],
+    rounds: [
+      {
+        label: 'Thurs 2:20PM',
+        course: 'American Dunes — Valor',
+        match: 'Herby v Carlos/Frosty',
+        scores: [
+          { player: 'Frosty', gross: 83, net: 83, snakes: 6, sixes: 42, ctp: -30, match: 20, stroke: 25 },
+          { player: 'Herby', gross: 91, net: 83, snakes: 6, sixes: 39, ctp: 15, match: -40, stroke: 25 },
+          { player: 'Carlos', gross: 99, net: 91, snakes: -12, sixes: 27, ctp: 15, match: 20, stroke: -50 },
+        ],
+      },
+      {
+        label: 'Fri 8:30AM',
+        course: 'Arcadia Bluffs — Bluffs',
+        match: 'Carlos v Herby/Frosty',
+        note: 'Carlos paid $450 for caddie',
+        scores: [
+          { player: 'Frosty', gross: 86, net: 86, snakes: 13.5, sixes: 43, ctp: 60, match: 20, stroke: 100 },
+          { player: 'Herby', gross: 99, net: 91, snakes: -27, sixes: 34, ctp: -30, match: 20, stroke: -50 },
+          { player: 'Carlos', gross: 106, net: 98, snakes: 13.5, sixes: 31, ctp: -30, match: -40, stroke: -50 },
+        ],
+      },
+      {
+        label: 'Fri 2:45PM',
+        course: 'Arcadia Bluffs — South',
+        match: 'Frosty v Herby/Carlos · match in middle',
+        note: 'Frosty paid $300 to Braydon caddie',
+        scores: [
+          { player: 'Frosty', gross: 86, net: 86, snakes: 22, sixes: 50, ctp: -30, match: 0, stroke: 100 },
+          { player: 'Herby', gross: 99, net: 91, snakes: 22, sixes: 30, ctp: 60, match: 0, stroke: -50 },
+          { player: 'Carlos', gross: 104, net: 96, snakes: -45, sixes: 28, ctp: -30, match: 0, stroke: -50 },
+        ],
+      },
+      {
+        label: 'Sat 8:42AM',
+        course: 'Arcadia Bluffs — South',
+        match: 'Carlos v Herby/Frosty',
+        scores: [
+          { player: 'Frosty', gross: 88, net: 88, snakes: 16, sixes: 44, ctp: -30, match: -40, stroke: 100 },
+          { player: 'Herby', gross: 107, net: 99, snakes: -32, sixes: 19, ctp: -30, match: 20, stroke: -50 },
+          { player: 'Carlos', gross: 99, net: 91, snakes: 16, sixes: 38, ctp: 60, match: 20, stroke: -50 },
+        ],
+      },
+      {
+        label: 'Sat 2:10PM',
+        course: 'Arcadia Bluffs — Bluffs',
+        match: 'Frosty v Herby/Carlos · match in middle',
+        scores: [
+          { player: 'Frosty', gross: 80, net: 80, snakes: 15, sixes: 51, ctp: 60, match: 0, stroke: 100 },
+          { player: 'Herby', gross: 100, net: 92, snakes: 15, sixes: 24, ctp: -30, match: 0, stroke: -50 },
+          { player: 'Carlos', gross: 95, net: 87, snakes: -30, sixes: 33, ctp: -30, match: 0, stroke: -50 },
+        ],
+      },
+      {
+        label: 'Sun 7:30AM',
+        course: 'Arcadia Bluffs — Bluffs',
+        match: 'Herby v Carlos/Frosty',
+        scores: [
+          { player: 'Frosty', gross: 87, net: 87, snakes: 38, sixes: 41, ctp: 60, match: -40, stroke: 0 },
+          { player: 'Herby', gross: 103, net: 95, snakes: -19, sixes: 17, ctp: -30, match: 20, stroke: 0 },
+          { player: 'Carlos', gross: 94, net: 86, snakes: -19, sixes: 44, ctp: -30, match: 20, stroke: 0 },
+        ],
+      },
+    ],
+    highlights: [
+      'Larson was the highlight of the trip — never got a drive past 180 yards',
+      'Larson lost a ball on hole 18 (legend has it, never been seen since)',
+      'Carlos finished dead last despite playing combo tees + 8 strokes',
+      'Frosty cleaned up: +$585.50 net for the weekend',
+      'Herby owes Frosty $432 in split sixes alone',
+      'Brad fronted $865 for car deposit (Herby + Carlos owe $288)',
+      'Weight challenge: whoever lost most % skipped paying Bluffs Round 1 caddie',
+    ],
+  },
+  {
+    id: '2025_bonus',
+    year: 2025,
+    annual: 'Bonus Trip',
+    name: 'Black Diamond Ranch',
+    logo: '/logo_2025_bonus.png',
+    location: 'Lecanto, FL',
+    dateLabel: '2025',
+    champion: 'Carlos',
+    championNote: 'won net stroke play despite torn calf',
+    asterisk: 'Carlos played with a torn calf · "asterisk season"',
+    standings: [
+      { player: 'Carlos', total: 0, place: 1, gross: 365, net: 333, asterisk: 'torn calf' },
+      { player: 'Frosty', total: 0, place: 2, gross: 424, net: 424 },
+      { player: 'Herby', total: 0, place: 3, gross: 476, net: 455 },
+    ],
+    settlements: [
+      { note: 'Various per-round and personal settlements — see notes below' },
+    ],
+    rules: [
+      '$150 overall stroke winner from each loser',
+      '$4 / split sixes per point',
+      '$50 from each loser net stroke play per round',
+      '$3 snakes per round',
+      '$30 per loser per CTP',
+      'Daily NET stroke winner does not pay dinner',
+    ],
+    rounds: [
+      {
+        label: 'Thurs 8:27AM',
+        course: 'Ranch',
+        note: '"Herby owes me $90"',
+        scores: [
+          { player: 'Frosty', gross: 79, net: 79 },
+          { player: 'Herby', gross: 92, net: 87 },
+          { player: 'Carlos', gross: null, net: -5, dnf: 'sat out (calf)' },
+        ],
+      },
+      {
+        label: 'Thurs 2:00PM',
+        course: 'Highlands / Back Quarry',
+        note: 'Me & Herby owe Carlos $?',
+        scores: [
+          { player: 'Frosty', gross: 89, net: 89 },
+          { player: 'Herby', gross: 94, net: 89 },
+          { player: 'Carlos', gross: 93, net: 88 },
+        ],
+      },
+      {
+        label: 'Fri 8:09AM',
+        course: 'Highland / Back Quarry',
+        note: 'Herby owes Brad $50 personal · Herby owes Carlos $60 · Frosty owes Carlos $24',
+        scores: [
+          { player: 'Frosty', gross: 86, net: 86 },
+          { player: 'Herby', gross: 95, net: 92 },
+          { player: 'Carlos', gross: 88, net: 80 },
+        ],
+      },
+      {
+        label: 'Fri 2:27PM',
+        course: 'Ranch',
+        note: 'Herby owes Carlos $12 · Frosty owes Carlos $12 · Herby owes Frosty $20',
+        scores: [
+          { player: 'Frosty', gross: 90, net: 90 },
+          { player: 'Herby', gross: 94, net: 91 },
+          { player: 'Carlos', gross: 93, net: 85 },
+        ],
+      },
+      {
+        label: 'Sat 8:09AM',
+        course: 'Quarry',
+        note: 'Herby owes Frosty $90 personal · Herby owes Frosty $128 sixes · Carlos owes Frosty $84 sixes',
+        scores: [
+          { player: 'Frosty', gross: 80, net: 80 },
+          { player: 'Herby', gross: 101, net: 96 },
+          { player: 'Carlos', gross: 91, net: 85 },
+        ],
+      },
+    ],
+    highlights: [
+      'Carlos played with a torn calf and still won net stroke play',
+      'Side action and personal owings tracked per-round (no headline aggregate)',
+      'Bonus mini-trip — slotted in between the main 2024 and 2025 events',
+    ],
+  },
+  {
+    id: '2024',
+    year: 2024,
+    annual: '1st Annual',
+    name: 'Streamsong + Innisbrook + Waterlefe',
+    logo: '/logo_2024.png',
+    location: 'Florida',
+    dateLabel: '2024',
+    champion: 'Frosty',
+    championNote: 'overall match play winner · 55 holes won',
+    standings: [
+      { player: 'Frosty', total: 0, place: 1, gross: 424, net: 0, matchHoles: 55, snakes: 6 },
+      { player: 'Carlos', total: 0, place: 2, gross: 481, net: 426, matchHoles: 54, snakes: -3 },
+      { player: 'Herby', total: 0, place: 3, gross: 472, net: 452, matchHoles: 44, snakes: -3 },
+    ],
+    settlements: [
+      { note: 'Round-by-round + match-hole settlements — see rules' },
+    ],
+    rules: [
+      '$4 per hole overall match play',
+      '$75 overall stroke winner',
+      '$50 to match play winner if solo · $15 to each teammate if team wins',
+      'Final 2 rounds: $20 per person to most match holes won',
+      '$20 per round winner stroke play',
+      '$3 snakes per round',
+    ],
+    rounds: [
+      {
+        label: 'Fri 8:50AM',
+        course: 'Streamsong Red',
+        match: 'Aron vs Carlos/Frosty',
+        scores: [
+          { player: 'Frosty', gross: 84, net: 84, matchHoles: 14, snakes: -24, matchResult: 'Win' },
+          { player: 'Herby', gross: 97, net: 93, matchHoles: 4, snakes: -24 },
+          { player: 'Carlos', gross: 94, net: 84, matchHoles: 14, snakes: 48, matchResult: 'Win' },
+        ],
+      },
+      {
+        label: 'Fri 2:25PM',
+        course: 'Streamsong Blue',
+        match: 'Carlos vs Aron/Frosty',
+        scores: [
+          { player: 'Frosty', gross: 79, net: 79, matchHoles: 15, snakes: 15, matchResult: 'Win' },
+          { player: 'Herby', gross: 87, net: 83, matchHoles: 15, snakes: -30, matchResult: 'Win' },
+          { player: 'Carlos', gross: 98, net: 87, matchHoles: 3, snakes: 15 },
+        ],
+      },
+      {
+        label: 'Sat 8:23AM',
+        course: 'Streamsong Black',
+        match: 'Brad vs Carlos/Aron',
+        scores: [
+          { player: 'Frosty', gross: 84, net: 84, matchHoles: 7 },
+          { player: 'Herby', gross: 99, net: 95, matchHoles: 11, matchResult: 'Win' },
+          { player: 'Carlos', gross: 101, net: 91, matchHoles: 11, matchResult: 'Win' },
+        ],
+      },
+      {
+        label: 'Sat 3:24PM',
+        course: 'WaterLefe',
+        match: 'Aron, Carlos, Frosty every 6 holes',
+        scores: [
+          { player: 'Frosty', gross: 90, net: 90, matchHoles: 7, snakes: -3 },
+          { player: 'Herby', gross: 105, net: 101, matchHoles: 7, snakes: 33 },
+          { player: 'Carlos', gross: 98, net: 85, matchHoles: 17, snakes: -30 },
+        ],
+      },
+      {
+        label: 'Sun 8:04AM',
+        course: 'Innisbrook Island',
+        match: 'Aron, Carlos, Frosty every 6 holes',
+        scores: [
+          { player: 'Frosty', gross: 87, net: 87, snakes: 18 },
+          { player: 'Herby', gross: 84, net: 80, snakes: 18 },
+          { player: 'Carlos', gross: 90, net: 79, snakes: -36 },
+        ],
+      },
+    ],
+    highlights: [
+      'The original. The trip that started it all.',
+      'Frosty narrowly edged out Carlos by 1 match hole (55 vs 54) for overall match play',
+      'Carlos shot the lowest net round of the trip — 79 at Innisbrook',
+      'Herby played his best round at Innisbrook (84 gross, 80 net) — the only time his ball stayed dry',
+    ],
+  },
+];
+
+// Placeholder year crest — gold + green badge with year prominent
+function YearCrestPlaceholder({ year, size = 100 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id={`crest-bg-${year}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#1a3a1f" />
+          <stop offset="100%" stopColor="#0a1f0f" />
+        </linearGradient>
+      </defs>
+      {/* Shield shape */}
+      <path d="M 50 5 L 90 18 L 90 55 Q 90 80 50 95 Q 10 80 10 55 L 10 18 Z"
+            fill={`url(#crest-bg-${year})`}
+            stroke="#d4a574" strokeWidth="2" />
+      {/* Inner border */}
+      <path d="M 50 12 L 83 22 L 83 53 Q 83 75 50 88 Q 17 75 17 53 L 17 22 Z"
+            fill="none" stroke="#d4a574" strokeWidth="0.6" opacity="0.5" />
+      {/* HERBTOWN tiny */}
+      <text x="50" y="32" textAnchor="middle" fill="#d4a574" fontSize="6" fontFamily="Georgia, serif" letterSpacing="1">HERBTOWN</text>
+      <text x="50" y="40" textAnchor="middle" fill="#d4a574" fontSize="4" fontFamily="Georgia, serif" letterSpacing="2" opacity="0.7">CLASSIC</text>
+      {/* Year - big */}
+      <text x="50" y="65" textAnchor="middle" fill="#f4ead5" fontSize="20" fontFamily="Georgia, serif" fontWeight="bold">{year}</text>
+      {/* Decorative line */}
+      <line x1="20" y1="72" x2="80" y2="72" stroke="#d4a574" strokeWidth="0.5" opacity="0.4" />
+      <text x="50" y="82" textAnchor="middle" fill="#d4a574" fontSize="4" fontFamily="Georgia, serif" letterSpacing="1.5">⟢ ARCHIVED ⟢</text>
+    </svg>
+  );
+}
+
+// ============= PAST TRIPS VIEW =============
+function PastTripsView({ setView }) {
+  const [expandedId, setExpandedId] = useState(null);
+
+  return (
+    <div className="fade-in safe-top" style={{ paddingLeft: '18px', paddingRight: '18px', paddingBottom: '100px', maxWidth: '500px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <button
+          onClick={() => setView('home')}
+          style={{
+            padding: '8px 14px',
+            background: 'transparent',
+            border: '1px solid rgba(212, 165, 116, 0.4)',
+            borderRadius: '2px',
+            color: '#d4a574',
+            fontSize: '10px',
+            letterSpacing: '2px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+        >
+          <ChevronLeft size={12} /> HOME
+        </button>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '3px', color: '#c090d0', fontWeight: 700 }}>⟢ PAST TRIPS ⟢</div>
+          <div style={{ fontFamily: '"Unifraktur Maguntia", serif', fontSize: '24px', color: '#f4ead5', lineHeight: 1, marginTop: '2px' }}>
+            The Archives
+          </div>
+        </div>
+        <div style={{ width: '60px' }} />
+      </div>
+
+      <div style={{ fontSize: '11px', opacity: 0.6, textAlign: 'center', marginBottom: '20px', fontStyle: 'italic', lineHeight: 1.4 }}>
+        Settled history. Locked in time.<br/>Tap a trip to revisit.
+      </div>
+
+      {/* Trip cards */}
+      {PAST_TRIPS.map((trip) => {
+        const expanded = expandedId === trip.id;
+        return (
+          <div
+            key={trip.id}
+            style={{
+              marginBottom: '14px',
+              background: 'rgba(244, 234, 213, 0.04)',
+              border: `1px solid ${expanded ? '#c090d0' : 'rgba(192, 144, 208, 0.3)'}`,
+              borderRadius: '4px',
+              overflow: 'hidden',
+              transition: 'border-color 0.2s',
+            }}
+          >
+            {/* Card header — always visible */}
+            <button
+              onClick={() => setExpandedId(expanded ? null : trip.id)}
+              style={{
+                width: '100%',
+                padding: '14px 12px',
+                background: 'transparent',
+                border: 'none',
+                color: '#f4ead5',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+            >
+              {/* Logo */}
+              <div style={{ flexShrink: 0 }}>
+                {trip.logo ? (
+                  <img
+                    src={trip.logo}
+                    alt={`${trip.year} ${trip.name}`}
+                    style={{
+                      width: '70px',
+                      height: '70px',
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))',
+                    }}
+                  />
+                ) : (
+                  <YearCrestPlaceholder year={trip.year} size={70} />
+                )}
+              </div>
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '9px', letterSpacing: '2px', color: '#c090d0', marginBottom: '2px' }}>
+                  {trip.annual}
+                </div>
+                <div style={{ fontFamily: '"Special Elite", serif', fontSize: '15px', marginBottom: '2px', lineHeight: 1.2 }}>
+                  {trip.name}
+                </div>
+                <div style={{ fontSize: '10px', opacity: 0.65, marginBottom: '6px' }}>
+                  {trip.location} · {trip.dateLabel}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
+                  <Trophy size={11} style={{ color: '#d4a574' }} />
+                  <span style={{ fontFamily: '"Special Elite", serif', color: '#d4a574', fontWeight: 600 }}>{trip.champion}</span>
+                  {trip.championAmount != null && (
+                    <span style={{ color: '#6b9e4e', fontWeight: 700, marginLeft: '4px' }}>
+                      +${trip.championAmount}
+                    </span>
+                  )}
+                  {trip.championNote && (
+                    <span style={{ opacity: 0.55, fontSize: '10px', fontStyle: 'italic', marginLeft: '4px' }}>
+                      · {trip.championNote}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div style={{ flexShrink: 0, color: '#c090d0', fontSize: '10px', letterSpacing: '1px' }}>
+                {expanded ? '▲' : '▼'}
+              </div>
+            </button>
+
+            {/* Expanded detail */}
+            {expanded && (
+              <div style={{ padding: '0 12px 14px', borderTop: '1px dashed rgba(192, 144, 208, 0.3)', paddingTop: '14px' }}>
+                {/* Hero logo display */}
+                {trip.logo && (
+                  <div style={{ textAlign: 'center', marginBottom: '14px' }}>
+                    <img
+                      src={trip.logo}
+                      alt={`${trip.year} ${trip.name}`}
+                      style={{
+                        width: '100%',
+                        maxWidth: '260px',
+                        display: 'block',
+                        margin: '0 auto',
+                        filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45))',
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Asterisk note if any */}
+                {trip.asterisk && (
+                  <div style={{
+                    padding: '8px 10px',
+                    background: 'rgba(196, 75, 75, 0.1)',
+                    border: '1px solid rgba(196, 75, 75, 0.3)',
+                    borderRadius: '2px',
+                    fontSize: '11px',
+                    fontStyle: 'italic',
+                    marginBottom: '12px',
+                    textAlign: 'center',
+                  }}>
+                    ⚠ {trip.asterisk}
+                  </div>
+                )}
+
+                {/* Final standings */}
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '8px', fontWeight: 600 }}>
+                    ⟢ FINAL STANDINGS ⟢
+                  </div>
+                  {trip.standings.map((s) => (
+                    <div key={s.player} style={{
+                      display: 'grid',
+                      gridTemplateColumns: '0.4fr 1fr 0.7fr 0.7fr',
+                      gap: '6px',
+                      padding: '5px 0',
+                      fontSize: '12px',
+                      alignItems: 'center',
+                      borderBottom: '1px dashed rgba(212, 165, 116, 0.1)',
+                    }}>
+                      <span style={{ color: s.place === 1 ? '#d4a574' : 'rgba(244, 234, 213, 0.5)', fontWeight: 700 }}>
+                        {s.place === 1 ? '🏆' : `${s.place}.`}
+                      </span>
+                      <span style={{ fontFamily: '"Special Elite", serif' }}>
+                        {s.player}
+                        {s.asterisk && <span style={{ color: '#c44b4b', fontSize: '9px', marginLeft: '4px' }}>*</span>}
+                      </span>
+                      <span style={{ textAlign: 'right', fontSize: '10px', opacity: 0.7 }}>
+                        gross <span style={{ color: '#d4a574', fontWeight: 600 }}>{s.gross}</span>
+                      </span>
+                      <span style={{ textAlign: 'right', fontSize: '10px', opacity: 0.7 }}>
+                        net <span style={{ color: '#d4a574', fontWeight: 600 }}>{s.net || '—'}</span>
+                      </span>
+                    </div>
+                  ))}
+                  {trip.standings[0].total !== 0 && (
+                    <div style={{ marginTop: '8px', padding: '8px', background: 'rgba(212, 165, 116, 0.08)', borderRadius: '2px' }}>
+                      {trip.standings.map((s) => (
+                        <div key={s.player} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', padding: '2px 0' }}>
+                          <span style={{ fontFamily: '"Special Elite", serif' }}>{s.player}</span>
+                          <span style={{ color: s.total >= 0 ? '#6b9e4e' : '#c44b4b', fontWeight: 700 }}>
+                            {s.total >= 0 ? '+' : ''}${s.total}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Settlements */}
+                {trip.settlements && trip.settlements.length > 0 && (
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '6px', fontWeight: 600 }}>
+                      ⟢ SETTLEMENTS ⟢
+                    </div>
+                    {trip.settlements.map((s, i) => (
+                      <div key={i} style={{ fontSize: '11px', padding: '3px 0', opacity: 0.85 }}>
+                        {s.note ? (
+                          <span style={{ fontStyle: 'italic', opacity: 0.75 }}>{s.note}</span>
+                        ) : (
+                          <>
+                            <span style={{ fontFamily: '"Special Elite", serif' }}>{s.from}</span>
+                            <span style={{ opacity: 0.5, margin: '0 6px' }}>owes</span>
+                            <span style={{ fontFamily: '"Special Elite", serif' }}>{s.to}</span>
+                            <span style={{ float: 'right', color: '#d4a574', fontWeight: 600 }}>${s.amount}</span>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Rounds */}
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', marginBottom: '8px', fontWeight: 600 }}>
+                    ⟢ ROUND BY ROUND ⟢
+                  </div>
+                  {trip.rounds.map((r, i) => (
+                    <div key={i} style={{
+                      marginBottom: '10px',
+                      padding: '10px',
+                      background: 'rgba(0,0,0,0.2)',
+                      border: '1px solid rgba(212, 165, 116, 0.15)',
+                      borderRadius: '2px',
+                    }}>
+                      <div style={{ fontSize: '10px', color: '#d4a574', letterSpacing: '1px', marginBottom: '2px' }}>
+                        {r.label}
+                      </div>
+                      <div style={{ fontFamily: '"Special Elite", serif', fontSize: '13px', marginBottom: '4px' }}>
+                        {r.course}
+                      </div>
+                      {r.match && (
+                        <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '6px' }}>
+                          {r.match}
+                        </div>
+                      )}
+                      {r.note && (
+                        <div style={{ fontSize: '10px', opacity: 0.65, fontStyle: 'italic', color: '#c090d0', marginBottom: '6px' }}>
+                          {r.note}
+                        </div>
+                      )}
+                      <div style={{ marginTop: '4px' }}>
+                        {r.scores.map((s) => (
+                          <div key={s.player} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '3px 0',
+                            fontSize: '11px',
+                            borderBottom: '1px dashed rgba(212, 165, 116, 0.08)',
+                          }}>
+                            <span style={{ flex: 1, fontFamily: '"Special Elite", serif' }}>{s.player}</span>
+                            {s.dnf ? (
+                              <span style={{ fontSize: '10px', opacity: 0.55, fontStyle: 'italic' }}>{s.dnf}</span>
+                            ) : (
+                              <>
+                                <span style={{ width: '40px', textAlign: 'right', color: '#d4a574', fontWeight: 600 }}>{s.gross}</span>
+                                {s.net != null && s.net !== s.gross && (
+                                  <span style={{ width: '40px', textAlign: 'right', fontSize: '10px', opacity: 0.7 }}>
+                                    /{s.net}
+                                  </span>
+                                )}
+                                {s.matchResult && (
+                                  <span style={{ marginLeft: '6px', fontSize: '9px', color: '#6b9e4e', fontWeight: 700, letterSpacing: '1px' }}>
+                                    ✓{s.matchResult.toUpperCase()}
+                                  </span>
+                                )}
+                                {s.matchHoles != null && (
+                                  <span style={{ marginLeft: '6px', fontSize: '9px', opacity: 0.55 }}>
+                                    {s.matchHoles}h
+                                  </span>
+                                )}
+                                {s.snakes != null && (
+                                  <span style={{ marginLeft: '6px', fontSize: '9px', color: s.snakes >= 0 ? '#6b9e4e' : '#c44b4b' }}>
+                                    🐍{s.snakes >= 0 ? '+' : ''}{s.snakes}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Rules */}
+                {trip.rules && trip.rules.length > 0 && (
+                  <details style={{ marginBottom: '14px' }}>
+                    <summary style={{ fontSize: '10px', letterSpacing: '2px', color: '#d4a574', cursor: 'pointer', padding: '4px 0', fontWeight: 600 }}>
+                      ⟢ THE RULES ⟢
+                    </summary>
+                    <div style={{ paddingTop: '6px' }}>
+                      {trip.rules.map((rule, i) => (
+                        <div key={i} style={{ fontSize: '10px', padding: '3px 0', opacity: 0.8, paddingLeft: '8px' }}>
+                          • {rule}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
+                {/* Highlights */}
+                {trip.highlights && trip.highlights.length > 0 && (
+                  <div style={{
+                    padding: '10px',
+                    background: 'rgba(192, 144, 208, 0.06)',
+                    border: '1px solid rgba(192, 144, 208, 0.3)',
+                    borderRadius: '2px',
+                  }}>
+                    <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#c090d0', marginBottom: '8px', fontWeight: 700 }}>
+                      ⚡ HIGHLIGHTS ⚡
+                    </div>
+                    {trip.highlights.map((h, i) => (
+                      <div key={i} style={{ fontSize: '11px', padding: '4px 0', lineHeight: 1.4 }}>
+                        ⟢ <span style={{ opacity: 0.9 }}>{h}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Footer */}
+      <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '10px', opacity: 0.4, fontStyle: 'italic' }}>
+        Three years deep · all logged · all settled
+      </div>
     </div>
   );
 }
