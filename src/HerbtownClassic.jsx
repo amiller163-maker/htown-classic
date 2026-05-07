@@ -596,7 +596,7 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
             </div>
             <img
               src="/herbtown_2027_logo.png"
-              alt="The 4th Annual Herbtown Classic — Sand Valley 2027"
+              alt="The 4th Annual Herbtown Classic — Cabot Cape Breton 2027"
               style={{
                 width: '100%',
                 maxWidth: '280px',
@@ -606,7 +606,7 @@ function HomeView({ setRoundIdx, setView, scores, snakes, ctp, sideBets, locks, 
               }}
             />
             <div style={{ fontSize: '11px', opacity: 0.85, marginTop: '8px', fontStyle: 'italic', color: '#d4a574' }}>
-              Sand Valley · 2027
+              Cabot Cape Breton · June 3-6, 2027
             </div>
           </div>
 
